@@ -13,6 +13,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Log the config in development to help debug issues.
+// This will only show in the browser's developer console.
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log("Firebase Config being used:", {
+        ...firebaseConfig,
+        apiKey: firebaseConfig.apiKey ? `...${firebaseConfig.apiKey.slice(-4)}` : undefined,
+    });
+}
+
 // Check if all required environment variables are present
 const areCredsAvailable = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
