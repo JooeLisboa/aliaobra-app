@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { providers } from '@/lib/data';
+import { getProvider, getProvidersByIds } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,13 +25,26 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
-  const [providerData, setProviderData] = useState<Provider | null>(); // undefined: loading, null: not found
+  const [providerData, setProviderData] = useState<Provider | null>();
+  const [managedProviders, setManagedProviders] = useState<Provider[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Find provider on client to avoid hydration mismatch.
   useEffect(() => {
-    const foundProvider = providers.find((p) => p.id === params.id);
-    setProviderData(foundProvider || null);
+    const fetchProviderData = async () => {
+      setIsLoading(true);
+      const foundProvider = await getProvider(params.id);
+      setProviderData(foundProvider || null);
+
+      if (foundProvider && foundProvider.type === 'agency' && foundProvider.managedProviderIds) {
+        const managed = await getProvidersByIds(foundProvider.managedProviderIds);
+        setManagedProviders(managed);
+      }
+      setIsLoading(false);
+    };
+
+    fetchProviderData();
   }, [params.id]);
+
 
   // This effect runs once on the client to avoid hydration mismatches for time-based UI
   useEffect(() => {
@@ -56,6 +69,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
         status: 'Em Serviço',
         serviceAcceptedAt: Date.now(),
       });
+      // TODO: Here you would also update the data in Firestore
     }
   };
 
@@ -66,6 +80,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
         status: 'Disponível',
         serviceAcceptedAt: undefined,
       });
+      // TODO: Here you would also update the data in Firestore
     }
   };
 
@@ -81,7 +96,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   };
 
   // Loading state
-  if (providerData === undefined) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-96 text-muted-foreground">
@@ -93,7 +108,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   }
 
   // Not found state
-  if (providerData === null) {
+  if (!providerData) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-4xl font-bold">404 - Profissional Não Encontrado</h1>
@@ -107,10 +122,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
 
   const isAgency = providerData.type === 'agency';
 
-  const managedProviders = isAgency
-    ? providers.filter(p => providerData.managedProviderIds?.includes(p.id))
-    : [];
-  
   const agencyPortfolio: PortfolioItem[] = isAgency
     ? managedProviders.flatMap(p => p.portfolio)
     : providerData.portfolio;

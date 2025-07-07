@@ -1,29 +1,43 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { providers } from '@/lib/data';
+import { getProviders } from '@/lib/data';
 import { ProviderCard } from '@/components/provider-card';
-import { Search } from 'lucide-react';
+import { Search, LoaderCircle } from 'lucide-react';
+import type { Provider } from '@/lib/types';
 
 export default function Home() {
+  const [allProviders, setAllProviders] = useState<Provider[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [locationSearch, setLocationSearch] = useState<string>('');
 
-  const categories = useMemo(() => {
-    const allCategories = providers.map(p => p.category);
-    // Use 'new Set' to get unique categories and add 'all' at the beginning
-    return ['all', ...Array.from(new Set(allCategories))];
+  useEffect(() => {
+    const fetchProviders = async () => {
+      setIsLoading(true);
+      const providersFromDb = await getProviders();
+      setAllProviders(providersFromDb);
+      setIsLoading(false);
+    };
+    fetchProviders();
   }, []);
 
+  const categories = useMemo(() => {
+    const allCategories = allProviders.map(p => p.category);
+    // Use 'new Set' to get unique categories and add 'all' at the beginning
+    return ['all', ...Array.from(new Set(allCategories))];
+  }, [allProviders]);
+
   const filteredProviders = useMemo(() => {
-    return providers.filter(provider => {
+    if (isLoading) return [];
+    return allProviders.filter(provider => {
       const categoryMatch = selectedCategory === 'all' || provider.category.toLowerCase() === selectedCategory.toLowerCase();
       const locationMatch = locationSearch === '' || provider.location.toLowerCase().includes(locationSearch.toLowerCase());
       return categoryMatch && locationMatch;
     });
-  }, [selectedCategory, locationSearch]);
+  }, [allProviders, selectedCategory, locationSearch, isLoading]);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -42,7 +56,7 @@ export default function Home() {
             <label htmlFor="service-category" className="text-sm font-medium text-foreground/90 mb-1 block">
               Serviço
             </label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
               <SelectTrigger id="service-category" className="w-full">
                 <SelectValue placeholder="Selecione a categoria" />
               </SelectTrigger>
@@ -62,12 +76,18 @@ export default function Home() {
               placeholder="Digite a cidade ou estado" 
               value={locationSearch}
               onChange={(e) => setLocationSearch(e.target.value)}
+              disabled={isLoading}
             />
           </div>
         </div>
       </div>
 
-      {filteredProviders.length > 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          <LoaderCircle className="w-8 h-8 animate-spin mr-4" />
+          Carregando profissionais...
+        </div>
+      ) : filteredProviders.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProviders.map((provider) => (
             <ProviderCard key={provider.id} provider={provider} />
@@ -78,7 +98,7 @@ export default function Home() {
             <Search className="mx-auto h-12 w-12" />
             <h3 className="mt-4 text-lg font-semibold text-foreground">Nenhum profissional encontrado</h3>
             <p className="mt-2 text-sm">
-                Tente ajustar seus filtros de busca para encontrar o que procura.
+                Tente ajustar seus filtros de busca ou verifique se há profissionais cadastrados no banco de dados.
             </p>
         </div>
       )}
