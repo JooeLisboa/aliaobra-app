@@ -11,20 +11,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StarRating } from '@/components/star-rating';
 import { ReviewCard } from '@/components/review-card';
-import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users } from 'lucide-react';
+import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Send } from 'lucide-react';
 import { ReviewForm } from '@/components/review-form';
 import { ProviderCard } from '@/components/provider-card';
 import type { PortfolioItem, Provider } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
   // We find the provider once and use it as initial state
   const initialProvider = providers.find((p) => p.id === params.id);
   
+  const { toast } = useToast();
   const [providerData, setProviderData] = useState<Provider | undefined>(initialProvider);
   const [isClient, setIsClient] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
 
   // This effect runs once on the client to avoid hydration mismatches
   useEffect(() => {
@@ -61,6 +67,16 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
       status: 'Disponível',
       serviceAcceptedAt: undefined, // Clear the timestamp
     });
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real app, this would get the message text and send it
+    toast({
+      title: "Mensagem Enviada!",
+      description: `Sua mensagem foi enviada para ${providerData.name}.`,
+    });
+    setMessageOpen(false); // Close the dialog
   };
 
   const isAgency = providerData.type === 'agency';
@@ -114,7 +130,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   <span className="text-sm text-muted-foreground">({providerData.reviewCount} avaliações)</span>
                 </div>
               </CardHeader>
-              <CardContent className="text-sm">
+              <CardContent className="text-sm p-6">
                   <div className="flex items-center gap-3 mb-3">
                       <MapPin className="w-5 h-5 text-muted-foreground" />
                       <span>{providerData.location}</span>
@@ -127,7 +143,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   </div>
                 
                 {isClient && !isAgency && (
-                    <div className="w-full mb-2 flex flex-col gap-2">
+                    <div className="w-full mb-4 flex flex-col gap-2">
                       {providerData.status === 'Disponível' ? (
                         <Button onClick={handleAcceptService} className="w-full" size="lg">Aceitar Serviço</Button>
                       ) : (
@@ -150,8 +166,35 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                     </div>
                   )}
 
-                <Button className="w-full mb-2" size="lg"><Phone className="mr-2"/> Entrar em contato</Button>
-                <Button variant="secondary" className="w-full"><MessageSquare className="mr-2"/> Enviar mensagem</Button>
+                  <div className="flex flex-col gap-2 pt-4 border-t">
+                    <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar para Profissional</Button>
+                    <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="secondary" className="w-full" size="lg">
+                          <MessageSquare className="mr-2"/> Enviar mensagem
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[480px]">
+                        <DialogHeader>
+                          <DialogTitle>Enviar mensagem para {providerData.name}</DialogTitle>
+                          <DialogDescription>
+                            Descreva o serviço que você precisa. O prestador receberá sua mensagem e poderá respondê-lo.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleSendMessage}>
+                          <div className="grid gap-4 py-4">
+                              <div className="grid gap-2">
+                                <Label htmlFor="message">Sua Mensagem</Label>
+                                <Textarea id="message" placeholder="Olá, gostaria de um orçamento para..." className="min-h-[120px]" required />
+                              </div>
+                          </div>
+                          <DialogFooter>
+                            <Button type="submit"><Send className="mr-2" />Enviar Mensagem</Button>
+                          </DialogFooter>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
               </CardContent>
             </Card>
           </div>
