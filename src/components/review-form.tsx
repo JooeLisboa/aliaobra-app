@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,8 +21,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { StarRating } from '@/components/star-rating';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Video, FileUp } from 'lucide-react';
+import { Send, Video, FileUp, LoaderCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { auth } from '@/lib/firebase';
+import { type User, onAuthStateChanged } from 'firebase/auth';
+import { addReview } from '@/lib/review-actions';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 const formSchema = z.object({
   rating: z.number().min(1, "A avaliação é obrigatória.").max(5),
@@ -38,7 +43,7 @@ const formSchema = z.object({
     path: ["image"],
 });
 
-export function ReviewForm() {
+export function ReviewForm({ providerId }: { providerId: string }) {
   const [open, setOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -46,6 +51,16 @@ export function ReviewForm() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,7 +91,6 @@ export function ReviewForm() {
     }
     
     return () => {
-      // Stop camera stream when component unmounts or dialog is closed
       if (videoRef.current && videoRef.current.srcObject) {
         const mediaStream = videoRef.current.srcObject as MediaStream;
         mediaStream.getTracks().forEach(track => track.stop());
@@ -118,15 +132,39 @@ export function ReviewForm() {
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "Avaliação Enviada!",
-      description: "Obrigado por seu feedback.",
+    if (!user) {
+      toast({ variant: "destructive", title: "Não autenticado", description: "Você precisa fazer login para deixar uma avaliação." });
+      return;
+    }
+    startTransition(async () => {
+      const result = await addReview({
+        providerId: providerId,
+        rating: values.rating,
+        comment: values.comment,
+        imageUrl: capturedImage,
+        author: {
+          id: user.uid,
+          name: user.displayName || user.email || "Usuário Anônimo",
+          avatarUrl: user.photoURL || `https://placehold.co/100x100.png`
+        }
+      });
+      if (result.success) {
+        toast({ title: "Avaliação Enviada!", description: "Obrigado por seu feedback. A página será atualizada." });
+        setOpen(false);
+        form.reset();
+        setCapturedImage(null);
+        // We can't use router.refresh() here as it's not a Route Handler,
+        // so we reload the page to show the new review.
+        window.location.reload();
+      } else {
+        toast({ variant: "destructive", title: "Erro ao Enviar", description: result.error });
+      }
     });
-    setOpen(false);
-    form.reset();
-    setCapturedImage(null);
   }
+
+  const triggerButton = (
+    <Button disabled={!user}>Deixar uma avaliação</Button>
+  );
 
   return (
     <>
@@ -138,7 +176,20 @@ export function ReviewForm() {
         }
       }}>
         <DialogTrigger asChild>
-          <Button>Deixar uma avaliação</Button>
+          {user ? (
+            triggerButton
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>{triggerButton}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Faça login para deixar uma avaliação.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </DialogTrigger>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
@@ -177,6 +228,7 @@ export function ReviewForm() {
                       <Textarea
                         placeholder="Descreva sua experiência com o profissional..."
                         {...field}
+                        disabled={isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -191,15 +243,15 @@ export function ReviewForm() {
                   <FormItem>
                     <FormLabel>Anexar Foto</FormLabel>
                     <div className="flex gap-2 items-center">
-                        <Button type="button" variant="outline" onClick={() => document.getElementById('file-input')?.click()}>
+                        <Button type="button" variant="outline" onClick={() => document.getElementById('file-input')?.click()} disabled={isPending}>
                             <FileUp className="mr-2" />
                             Do Arquivo
                         </Button>
-                        <Input id="file-input" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                        <Input id="file-input" type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={isPending} />
 
                         <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
                             <DialogTrigger asChild>
-                                <Button type="button" variant="outline"><Video className="mr-2" /> Da Câmera</Button>
+                                <Button type="button" variant="outline" disabled={isPending}><Video className="mr-2" /> Da Câmera</Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-md">
                                 <DialogHeader>
@@ -246,7 +298,11 @@ export function ReviewForm() {
               />
               
               <DialogFooter>
-                <Button type="submit"><Send className='mr-2' /> Enviar Avaliação</Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending && <LoaderCircle className="mr-2 animate-spin" />}
+                  <Send className='mr-2' /> 
+                  {isPending ? 'Enviando...' : 'Enviar Avaliação'}
+                </Button>
               </DialogFooter>
             </form>
           </Form>

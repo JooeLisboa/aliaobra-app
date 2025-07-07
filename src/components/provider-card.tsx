@@ -12,18 +12,20 @@ interface ProviderCardProps {
 }
 
 export function ProviderCard({ provider }: ProviderCardProps) {
+  const portfolioImage = provider.portfolio?.[0]?.imageUrl || 'https://placehold.co/400x200.png';
+  const portfolioHint = provider.portfolio?.[0]?.['data-ai-hint'] || 'construction work';
+
   return (
     <Link href={`/providers/${provider.id}`} className="block group">
       <Card className="h-full flex flex-col transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1">
         <CardHeader className="p-0">
           <div className="relative h-40 w-full">
             <Image
-              src={`https://placehold.co/400x200.png`}
+              src={portfolioImage}
               alt={`${provider.name}'s work`}
-              layout="fill"
-              objectFit="cover"
-              className="rounded-t-lg"
-              data-ai-hint="construction work"
+              fill
+              className="rounded-t-lg object-cover"
+              data-ai-hint={portfolioHint}
             />
             <div className="absolute -bottom-8 left-4">
               <Avatar className="h-16 w-16 border-4 border-card">

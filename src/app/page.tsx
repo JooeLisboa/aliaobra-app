@@ -40,68 +40,81 @@ export default function Home() {
   }, [allProviders, selectedCategory, locationSearch, isLoading]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4 tracking-tight">
-          Encontre o Profissional Certo
-        </h1>
-        <p className="text-lg md:text-xl text-foreground/80 max-w-3xl mx-auto">
-          Busque por pedreiros, pintores, eletricistas e mais. Veja avaliações e portfólios para contratar com segurança.
-        </p>
+    <div className="w-full mx-auto">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4 tracking-tight">
+            Encontre o Profissional Certo
+          </h1>
+          <p className="text-lg md:text-xl text-foreground/80 max-w-3xl mx-auto">
+            Busque por pedreiros, pintores, eletricistas e mais. Veja avaliações e portfólios para contratar com segurança.
+          </p>
+        </div>
+
+        <div className="bg-card p-4 sm:p-6 rounded-lg shadow-md mb-12 max-w-4xl mx-auto">
+          <div className="grid sm:grid-cols-2 gap-4 items-end">
+            <div>
+              <label htmlFor="service-category" className="text-sm font-medium text-foreground/90 mb-1 block">
+                Serviço
+              </label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
+                <SelectTrigger id="service-category" className="w-full">
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category === 'all' ? 'Todas as categorias' : category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="location" className="text-sm font-medium text-foreground/90 mb-1 block">Localização</label>
+              <Input 
+                id="location" 
+                placeholder="Digite a cidade ou estado" 
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-card p-4 sm:p-6 rounded-lg shadow-md mb-12 max-w-4xl mx-auto">
-        <div className="grid sm:grid-cols-2 gap-4 items-end">
-          <div>
-            <label htmlFor="service-category" className="text-sm font-medium text-foreground/90 mb-1 block">
-              Serviço
-            </label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
-              <SelectTrigger id="service-category" className="w-full">
-                <SelectValue placeholder="Selecione a categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category === 'all' ? 'Todas as categorias' : category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div id="about" className="py-12 md:py-20 bg-secondary">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a ServiçoPro</h2>
+              <p className="mt-6 max-w-3xl mx-auto text-lg leading-8 text-secondary-foreground">
+                  Nossa missão é conectar você aos melhores profissionais da construção civil. Na ServiçoPro, acreditamos que encontrar um prestador de serviço confiável e qualificado deve ser um processo simples e transparente. Facilitamos a busca, a avaliação e a contratação, garantindo segurança e qualidade para sua obra ou reforma.
+              </p>
           </div>
-          <div>
-            <label htmlFor="location" className="text-sm font-medium text-foreground/90 mb-1 block">Localização</label>
-            <Input 
-              id="location" 
-              placeholder="Digite a cidade ou estado" 
-              value={locationSearch}
-              onChange={(e) => setLocationSearch(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-        </div>
       </div>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64 text-muted-foreground">
-          <LoaderCircle className="w-8 h-8 animate-spin mr-4" />
-          Carregando profissionais...
-        </div>
-      ) : filteredProviders.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProviders.map((provider) => (
-            <ProviderCard key={provider.id} provider={provider} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 text-muted-foreground">
-            <Search className="mx-auto h-12 w-12" />
-            <h3 className="mt-4 text-lg font-semibold text-foreground">Nenhum profissional encontrado</h3>
-            <p className="mt-2 text-sm">
-                Tente ajustar seus filtros de busca ou verifique se há profissionais cadastrados no banco de dados.
-            </p>
-        </div>
-      )}
+      
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64 text-muted-foreground">
+            <LoaderCircle className="w-8 h-8 animate-spin mr-4" />
+            Carregando profissionais...
+          </div>
+        ) : filteredProviders.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProviders.map((provider) => (
+              <ProviderCard key={provider.id} provider={provider} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 text-muted-foreground">
+              <Search className="mx-auto h-12 w-12" />
+              <h3 className="mt-4 text-lg font-semibold text-foreground">Nenhum profissional encontrado</h3>
+              <p className="mt-2 text-sm">
+                  Tente ajustar seus filtros de busca ou verifique se há profissionais cadastrados no banco de dados.
+              </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -321,7 +321,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                 <Card>
                   <CardHeader className="flex-row items-center justify-between">
                     <CardTitle>Avaliações de Clientes</CardTitle>
-                    <ReviewForm />
+                    <ReviewForm providerId={providerData.id} />
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {providerData.reviews.length > 0 ? (
