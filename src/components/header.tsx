@@ -23,7 +23,7 @@ const NavLinks = () => (
       </Link>
     </Button>
     <Button variant="ghost" asChild>
-      <Link href="/#pricing" prefetch={false}>
+      <Link href="/plans" prefetch={false}>
         Planos
       </Link>
     </Button>
