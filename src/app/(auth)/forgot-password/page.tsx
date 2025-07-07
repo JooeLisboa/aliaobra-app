@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from 'zod';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,57 +15,56 @@ import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { useToast } from "@/hooks/use-toast";
 import { auth } from '@/lib/firebase';
-import { Wrench, LoaderCircle } from "lucide-react";
+import { MailQuestion, LoaderCircle, ArrowLeft } from "lucide-react";
 
-const loginSchema = z.object({
+const forgotPasswordSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
-  password: z.string().min(1, { message: 'A senha é obrigatória.' }),
 });
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof loginSchema>) {
+  async function onSubmit(values: z.infer<typeof forgotPasswordSchema>) {
     setIsLoading(true);
     if (!auth) {
       toast({
         variant: "destructive",
         title: "Erro de Configuração",
-        description: "A autenticação do Firebase não está configurada.",
+        description: "O serviço de autenticação não está disponível.",
       });
       setIsLoading(false);
       return;
     }
 
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      
+      await sendPasswordResetEmail(auth, values.email);
       toast({
-        title: "Login realizado com sucesso!",
-        description: "Você será redirecionado para a página inicial.",
+        title: "Email de Recuperação Enviado",
+        description: "Verifique sua caixa de entrada para o link de redefinição de senha.",
       });
-
-      router.push('/');
-
+      router.push('/login');
     } catch (error: any) {
-      console.error(error);
+      console.error("Error sending password reset email:", error);
       let errorMessage = "Ocorreu um erro inesperado.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        errorMessage = "Email ou senha inválidos.";
+      // Firebase often returns 'auth/user-not-found' but for security, 
+      // it's better not to confirm if an email exists.
+      if (error.code === 'auth/invalid-email') {
+        errorMessage = "O email fornecido é inválido.";
+      } else {
+        errorMessage = "Não foi possível enviar o email de recuperação. Tente novamente mais tarde."
       }
       toast({
         variant: "destructive",
-        title: "Erro ao Entrar",
+        title: "Erro ao Enviar Email",
         description: errorMessage,
       });
     } finally {
@@ -77,10 +76,10 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] bg-background p-4">
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader className="text-center">
-            <Wrench className="mx-auto h-12 w-12 text-primary" />
-            <CardTitle className="text-2xl mt-4">Bem-vindo de volta!</CardTitle>
+            <MailQuestion className="mx-auto h-12 w-12 text-primary" />
+            <CardTitle className="text-2xl mt-4">Esqueceu sua senha?</CardTitle>
             <CardDescription>
-                Entre na sua conta para gerenciar seus serviços.
+                Sem problemas. Digite seu email e enviaremos um link para você criar uma nova.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,34 +98,15 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem className="grid gap-2">
-                     <div className="flex items-center">
-                       <Label htmlFor="password">Senha</Label>
-                       <Link href="/forgot-password" className="ml-auto inline-block text-sm underline">
-                         Esqueceu sua senha?
-                       </Link>
-                     </div>
-                    <FormControl>
-                      <Input id="password" type="password" {...field} disabled={isLoading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? 'Entrando...' : 'Entrar'}
+                {isLoading ? 'Enviando...' : 'Enviar Link de Recuperação'}
               </Button>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm">
-            Não tem uma conta?{" "}
-            <Link href="/signup" className="underline">
-              Cadastre-se
+            <Link href="/login" className="underline inline-flex items-center gap-1">
+              <ArrowLeft className="w-3 h-3"/> Voltar para o Login
             </Link>
           </div>
         </CardContent>
