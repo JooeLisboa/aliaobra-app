@@ -1,15 +1,19 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { providers } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StarRating } from '@/components/star-rating';
 import { ReviewCard } from '@/components/review-card';
-import { CheckCircle, MapPin, MessageSquare, Phone } from 'lucide-react';
+import { CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users } from 'lucide-react';
 import { ReviewForm } from '@/components/review-form';
+import { ProviderCard } from '@/components/provider-card';
+import type { PortfolioItem } from '@/lib/types';
+
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
   const provider = providers.find((p) => p.id === params.id);
@@ -17,6 +21,17 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   if (!provider) {
     notFound();
   }
+  
+  const isAgency = provider.type === 'agency';
+
+  const managedProviders = isAgency
+    ? providers.filter(p => provider.managedProviderIds?.includes(p.id))
+    : [];
+  
+  const agencyPortfolio: PortfolioItem[] = isAgency
+    ? managedProviders.flatMap(p => p.portfolio)
+    : provider.portfolio;
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -28,8 +43,18 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                 <AvatarImage src={provider.avatarUrl} alt={provider.name} />
                 <AvatarFallback>{provider.name.charAt(0)}</AvatarFallback>
               </Avatar>
-              <h1 className="text-2xl font-bold">{provider.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">{provider.name}</h1>
+                {isAgency && <Briefcase className="w-6 h-6 text-primary" />}
+              </div>
               <p className="text-muted-foreground">{provider.category}</p>
+              
+              {!isAgency && provider.agency && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Membro da <Link href={`/providers/${provider.agency.id}`} className="text-primary hover:underline font-semibold">{provider.agency.name}</Link>
+                </p>
+              )}
+
               <div className="flex items-center gap-2 mt-2">
                 <StarRating rating={provider.rating} readOnly />
                 <span className="text-sm text-muted-foreground">({provider.reviewCount} avaliações)</span>
@@ -51,35 +76,64 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
         </div>
 
         <div className="lg:col-span-2">
-          <Tabs defaultValue="reviews">
-            <TabsList className="grid w-full grid-cols-3">
+           <Tabs defaultValue={isAgency ? "professionals" : "portfolio"}>
+            <TabsList className={`grid w-full ${isAgency ? 'grid-cols-4' : 'grid-cols-3'}`}>
+              {isAgency && <TabsTrigger value="professionals">Profissionais</TabsTrigger>}
               <TabsTrigger value="portfolio">Portfólio</TabsTrigger>
               <TabsTrigger value="about">Sobre</TabsTrigger>
               <TabsTrigger value="reviews">Avaliações</TabsTrigger>
             </TabsList>
+
+            {isAgency && (
+              <TabsContent value="professionals" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users />
+                      Profissionais Gerenciados
+                    </CardTitle>
+                    <CardDescription>
+                      {managedProviders.length} profissionais na equipe da {provider.name}.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {managedProviders.map((p) => (
+                        <ProviderCard key={p.id} provider={p} />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+
             <TabsContent value="portfolio" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Trabalhos Realizados</CardTitle>
+                  <CardTitle>{isAgency ? 'Portfólio da Equipe' : 'Trabalhos Realizados'}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {provider.portfolio.map((item) => (
-                      <div key={item.id} className="group relative">
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.description}
-                          width={400}
-                          height={300}
-                          className="rounded-lg object-cover aspect-square"
-                          data-ai-hint={item['data-ai-hint']}
-                        />
-                         <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                            {item.description}
+                  {agencyPortfolio.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {agencyPortfolio.map((item) => (
+                        <div key={item.id} className="group relative">
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.description}
+                            width={400}
+                            height={300}
+                            className="rounded-lg object-cover aspect-square"
+                            data-ai-hint={item['data-ai-hint']}
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                              {item.description}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">Nenhum trabalho no portfólio ainda.</p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -94,7 +148,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                     <p className="text-muted-foreground">{provider.bio}</p>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg mb-2">Habilidades</h3>
+                    <h3 className="font-semibold text-lg mb-2">Especialidades</h3>
                     <div className="flex flex-wrap gap-2">
                       {provider.skills.map((skill) => (
                         <Badge key={skill} variant="outline">{skill}</Badge>
@@ -111,9 +165,13 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   <ReviewForm />
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {provider.reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))}
+                  {provider.reviews.length > 0 ? (
+                    provider.reviews.map((review) => (
+                      <ReviewCard key={review.id} review={review} />
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">Nenhuma avaliação ainda.</p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

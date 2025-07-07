@@ -16,7 +16,7 @@ import { Wrench } from "lucide-react"
 export default function SignupPage() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] bg-background p-4">
-      <Card className="mx-auto max-w-sm w-full">
+      <Card className="mx-auto max-w-lg w-full">
         <CardHeader className="text-center">
           <Wrench className="mx-auto h-12 w-12 text-primary" />
           <CardTitle className="text-2xl mt-4">Crie sua Conta</CardTitle>
@@ -27,11 +27,11 @@ export default function SignupPage() {
         <CardContent>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="full-name">Nome Completo</Label>
+              <Label htmlFor="full-name">Nome Completo ou Nome da Agência</Label>
               <Input id="full-name" placeholder="Seu nome" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cpf">CPF</Label>
+              <Label htmlFor="cpf">CPF ou CNPJ</Label>
               <Input id="cpf" placeholder="000.000.000-00" required />
             </div>
             <div className="grid gap-2">
@@ -50,12 +50,12 @@ export default function SignupPage() {
 
             <div className="grid gap-2">
               <Label>Qual é o seu objetivo?</Label>
-              <RadioGroup defaultValue="client" className="grid grid-cols-2 gap-4">
+              <RadioGroup defaultValue="client" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <RadioGroupItem value="client" id="client" className="peer sr-only" />
                   <Label
                     htmlFor="client"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                   >
                     Quero Contratar
                   </Label>
@@ -68,9 +68,22 @@ export default function SignupPage() {
                   />
                   <Label
                     htmlFor="provider"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                   >
-                    Oferecer Serviço
+                    Sou Profissional
+                  </Label>
+                </div>
+                <div>
+                  <RadioGroupItem
+                    value="agency"
+                    id="agency"
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor="agency"
+                    className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                  >
+                    Sou uma Agência
                   </Label>
                 </div>
               </RadioGroup>

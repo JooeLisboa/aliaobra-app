@@ -1,9 +1,10 @@
 import type { Provider } from './types';
 
-export const providers: Provider[] = [
+const allProviders: Provider[] = [
   {
     id: '1',
     name: 'João Silva',
+    type: 'individual',
     category: 'Pedreiro',
     location: 'São Paulo, SP',
     avatarUrl: 'https://placehold.co/100x100.png',
@@ -12,6 +13,7 @@ export const providers: Provider[] = [
     bio: 'Mais de 15 anos de experiência em alvenaria, construção de muros e reformas em geral. Qualidade e compromisso com o prazo são minhas prioridades.',
     skills: ['Alvenaria', 'Reboco', 'Construção de Lajes', 'Fundações'],
     availability: 'Disponível em 2 semanas',
+    agency: { id: '5', name: 'Empreiteira ConstróiBem' },
     portfolio: [
       { id: 'p1', imageUrl: 'https://placehold.co/600x400.png', description: 'Construção de muro residencial', "data-ai-hint": "brick wall" },
       { id: 'p2', imageUrl: 'https://placehold.co/600x400.png', description: 'Reforma de fachada', "data-ai-hint": "house facade" },
@@ -37,6 +39,7 @@ export const providers: Provider[] = [
   {
     id: '2',
     name: 'Ana Pereira',
+    type: 'individual',
     category: 'Pintora',
     location: 'Rio de Janeiro, RJ',
     avatarUrl: 'https://placehold.co/100x100.png',
@@ -70,6 +73,7 @@ export const providers: Provider[] = [
   {
     id: '3',
     name: 'Marcos Oliveira',
+    type: 'individual',
     category: 'Eletricista',
     location: 'Belo Horizonte, MG',
     avatarUrl: 'https://placehold.co/100x100.png',
@@ -94,6 +98,7 @@ export const providers: Provider[] = [
   {
     id: '4',
     name: 'Carlos Souza',
+    type: 'individual',
     category: 'Ajudante',
     location: 'São Paulo, SP',
     avatarUrl: 'https://placehold.co/100x100.png',
@@ -102,6 +107,7 @@ export const providers: Provider[] = [
     bio: 'Ajudante de obra geral, com disposição para carga e descarga, demolição, e auxílio a pedreiros e pintores. Sou proativo e aprendo rápido.',
     skills: ['Carga e Descarga', 'Demolição', 'Limpeza de Obra', 'Preparo de Massa'],
     availability: 'Disponível imediatamente',
+    agency: { id: '5', name: 'Empreiteira ConstróiBem' },
     portfolio: [],
     reviews: [
         {
@@ -113,4 +119,38 @@ export const providers: Provider[] = [
         }
     ],
   },
+  {
+    id: '5',
+    name: 'Empreiteira ConstróiBem',
+    type: 'agency',
+    category: 'Empreiteira',
+    location: 'São Paulo, SP',
+    avatarUrl: 'https://placehold.co/100x100.png',
+    rating: 4.9,
+    reviewCount: 8,
+    bio: 'A ConstróiBem é uma agência que conecta os melhores profissionais da construção civil a clientes que buscam qualidade e segurança. Gerenciamos todo o processo, da contratação à entrega da obra, garantindo a sua tranquilidade.',
+    skills: ['Gestão de Obras', 'Recrutamento', 'Qualidade', 'Orçamentos'],
+    availability: 'Consulte nossos profissionais',
+    managedProviderIds: ['1', '4'],
+    portfolio: [], // Agency portfolio can be separate or aggregated
+    reviews: [
+        {
+            id: 'r7',
+            author: { name: 'Mariana Investimentos', avatarUrl: 'https://placehold.co/100x100.png' },
+            rating: 5,
+            comment: 'Contratamos a ConstróiBem para uma reforma grande e a experiência foi ótima. Eles cuidaram de tudo e os profissionais enviados eram excelentes.',
+            date: '12/06/2024'
+        },
+        {
+            id: 'r8',
+            author: { name: 'Condomínio Residencial', avatarUrl: 'https://placehold.co/100x100.png' },
+            rating: 5,
+            comment: 'Serviço de primeira. A agência facilitou muito a contratação de múltiplos serviços que precisávamos.',
+            date: '03/05/2024'
+        }
+    ],
+  },
 ];
+
+// We export a clone of the array to prevent mutations from affecting other parts of the app.
+export const providers = allProviders.map(p => ({...p}));

@@ -10,6 +10,13 @@ export type Review = {
   date: string;
 };
 
+export type PortfolioItem = {
+  id: string;
+  imageUrl: string;
+  description: string;
+  "data-ai-hint": string;
+};
+
 export type Provider = {
   id: string;
   name: string;
@@ -21,10 +28,14 @@ export type Provider = {
   bio: string;
   skills: string[];
   availability: string;
-  portfolio: {
-    id: string;
-    imageUrl: string;
-    description: string;
-  }[];
+  portfolio: PortfolioItem[];
   reviews: Review[];
+  type: 'individual' | 'agency';
+  // For agencies
+  managedProviderIds?: string[];
+  // For individuals belonging to an agency
+  agency?: {
+    id: string;
+    name: string;
+  };
 };

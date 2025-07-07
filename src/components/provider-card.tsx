@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/star-rating';
-import { MapPin } from 'lucide-react';
+import { MapPin, Briefcase } from 'lucide-react';
 import type { Provider } from '@/lib/types';
 
 interface ProviderCardProps {
@@ -35,7 +35,15 @@ export function ProviderCard({ provider }: ProviderCardProps) {
         </CardHeader>
         <CardContent className="pt-10 flex-grow">
           <CardTitle className="text-lg font-semibold hover:text-primary">{provider.name}</CardTitle>
-          <Badge variant="secondary" className="mt-1">{provider.category}</Badge>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <Badge variant="secondary">{provider.category}</Badge>
+            {provider.type === 'agency' && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Briefcase className="w-3 h-3" />
+                Agência
+              </Badge>
+            )}
+           </div>
           <div className="flex items-center text-sm text-muted-foreground mt-2">
             <MapPin className="w-4 h-4 mr-1.5" />
             <span>{provider.location}</span>
