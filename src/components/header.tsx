@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Wrench } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AuthStatus } from "./auth-status";
 
 const AppLogo = () => (
   <Link href="/" className="flex items-center gap-2" prefetch={false}>
@@ -35,21 +36,6 @@ const NavLinks = () => (
   </>
 );
 
-const AuthButtons = () => (
-    <div className="flex items-center gap-2">
-      <Button variant="ghost" asChild>
-        <Link href="/login" prefetch={false}>
-          Entrar
-        </Link>
-      </Button>
-      <Button asChild>
-        <Link href="/signup" prefetch={false}>
-          Cadastre-se
-        </Link>
-      </Button>
-    </div>
-  );
-
 export function Header() {
   const isMobile = useIsMobile();
 
@@ -70,7 +56,7 @@ export function Header() {
                 <AppLogo />
                 <NavLinks />
                 <div className="mt-4">
-                    <AuthButtons />
+                  <AuthStatus />
                 </div>
               </nav>
             </SheetContent>
@@ -88,7 +74,7 @@ export function Header() {
           <NavLinks />
         </nav>
         <div className="ml-auto flex items-center gap-4">
-          <AuthButtons />
+          <AuthStatus />
         </div>
       </div>
     </header>
