@@ -12,7 +12,7 @@ const allProviders: Provider[] = [
     reviewCount: 25,
     bio: 'Mais de 15 anos de experiência em alvenaria, construção de muros e reformas em geral. Qualidade e compromisso com o prazo são minhas prioridades.',
     skills: ['Alvenaria', 'Reboco', 'Construção de Lajes', 'Fundações'],
-    availability: 'Disponível em 2 semanas',
+    status: 'Disponível',
     agency: { id: '5', name: 'Empreiteira ConstróiBem' },
     portfolio: [
       { id: 'p1', imageUrl: 'https://placehold.co/600x400.png', description: 'Construção de muro residencial', "data-ai-hint": "brick wall" },
@@ -47,7 +47,7 @@ const allProviders: Provider[] = [
     reviewCount: 42,
     bio: 'Pintora profissional com foco em acabamentos finos e pintura decorativa. Utilizo as melhores tintas e técnicas para um resultado duradouro e bonito.',
     skills: ['Pintura Interna', 'Pintura Externa', 'Textura', 'Efeitos Decorativos'],
-    availability: 'Disponível imediatamente',
+    status: 'Disponível',
     portfolio: [
         { id: 'p4', imageUrl: 'https://placehold.co/600x400.png', description: 'Pintura de sala de estar', "data-ai-hint": "living room" },
         { id: 'p5', imageUrl: 'https://placehold.co/600x400.png', description: 'Fachada de prédio comercial', "data-ai-hint": "building facade" },
@@ -81,7 +81,7 @@ const allProviders: Provider[] = [
     reviewCount: 31,
     bio: 'Eletricista certificado com experiência em instalações residenciais e comerciais. Segurança e conformidade com as normas são minhas garantias.',
     skills: ['Instalação Elétrica', 'Manutenção Preventiva', 'Troca de Disjuntores', 'Iluminação'],
-    availability: 'Disponível na próxima semana',
+    status: 'Disponível',
     portfolio: [
         { id: 'p6', imageUrl: 'https://placehold.co/600x400.png', description: 'Instalação de quadro de luz', "data-ai-hint": "electrical panel" },
     ],
@@ -106,7 +106,7 @@ const allProviders: Provider[] = [
     reviewCount: 15,
     bio: 'Ajudante de obra geral, com disposição para carga e descarga, demolição, e auxílio a pedreiros e pintores. Sou proativo e aprendo rápido.',
     skills: ['Carga e Descarga', 'Demolição', 'Limpeza de Obra', 'Preparo de Massa'],
-    availability: 'Disponível imediatamente',
+    status: 'Disponível',
     agency: { id: '5', name: 'Empreiteira ConstróiBem' },
     portfolio: [],
     reviews: [
@@ -130,7 +130,7 @@ const allProviders: Provider[] = [
     reviewCount: 8,
     bio: 'A ConstróiBem é uma agência que conecta os melhores profissionais da construção civil a clientes que buscam qualidade e segurança. Gerenciamos todo o processo, da contratação à entrega da obra, garantindo a sua tranquilidade.',
     skills: ['Gestão de Obras', 'Recrutamento', 'Qualidade', 'Orçamentos'],
-    availability: 'Consulte nossos profissionais',
+    status: 'Disponível',
     managedProviderIds: ['1', '4'],
     portfolio: [], // Agency portfolio can be separate or aggregated
     reviews: [

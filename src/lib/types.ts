@@ -27,7 +27,8 @@ export type Provider = {
   reviewCount: number;
   bio: string;
   skills: string[];
-  availability: string;
+  status: 'Disponível' | 'Em Serviço';
+  serviceAcceptedAt?: number;
   portfolio: PortfolioItem[];
   reviews: Review[];
   type: 'individual' | 'agency';
