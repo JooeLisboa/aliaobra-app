@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getProvider, getProvidersByIds } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,11 +21,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/lib/hooks/use-user';
+import { startChat } from '@/lib/chat-actions';
+
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
+  const { user } = useUser();
+  const router = useRouter();
+
   const [messageOpen, setMessageOpen] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [providerData, setProviderData] = useState<Provider | null>();
   const [managedProviders, setManagedProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,11 +52,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     fetchProviderData();
   }, [params.id]);
 
-
-  // This effect runs once on the client to avoid hydration mismatches for time-based UI
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // This effect sets up a timer to re-render the component and update time-based UI
   useEffect(() => {
@@ -84,15 +86,37 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (providerData) {
-      toast({
-        title: "Mensagem Enviada!",
-        description: `Sua mensagem foi enviada para ${providerData.name}.`,
-      });
-      setMessageOpen(false);
+    const formData = new FormData(e.target as HTMLFormElement);
+    if (!providerData || !user) {
+        toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado para enviar uma mensagem." });
+        return;
+    };
+
+    setIsSendingMessage(true);
+    formData.append('providerId', providerData.id);
+    formData.append('clientId', user.uid);
+    formData.append('clientName', user.displayName || user.email || 'Cliente');
+    formData.append('clientAvatar', user.photoURL || `https://placehold.co/100x100.png`);
+    
+    const result = await startChat(formData);
+    
+    if (result.success && result.chatId) {
+        toast({
+            title: "Conversa iniciada!",
+            description: "Você será redirecionado para o chat.",
+        });
+        setMessageOpen(false);
+        router.push(`/chat/${result.chatId}`);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Erro ao enviar mensagem",
+            description: result.error,
+        });
     }
+    setIsSendingMessage(false);
   };
 
   // Loading state
@@ -128,7 +152,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
 
   const serviceAcceptedAt = providerData.serviceAcceptedAt || 0;
   const oneHourInMs = 60 * 60 * 1000;
-  const timeSinceAccepted = isClient ? Date.now() - serviceAcceptedAt : 0;
+  const timeSinceAccepted = Date.now() - serviceAcceptedAt;
   const canFinishService = timeSinceAccepted > oneHourInMs;
 
   const getRemainingTime = () => {
@@ -137,6 +161,12 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     const minutes = Math.ceil(remainingMs / (1000 * 60));
     return `Liberado para finalizar em aprox. ${minutes} min.`;
   };
+  
+  const sendMessageTrigger = (
+      <Button variant="secondary" className="w-full" size="lg" disabled={!user}>
+        <MessageSquare className="mr-2"/> Enviar mensagem
+      </Button>
+  );
 
   return (
     <TooltipProvider>
@@ -178,7 +208,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                       }
                   </div>
                 
-                {isClient && !isAgency && (
+                {!isAgency && (
                     <div className="w-full mb-4 flex flex-col gap-2">
                       {providerData.status === 'Disponível' ? (
                         <Button onClick={handleAcceptService} className="w-full" size="lg">Aceitar Serviço</Button>
@@ -202,29 +232,41 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   )}
 
                   <div className="flex flex-col gap-2 pt-4 border-t">
-                    <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar para Profissional</Button>
+                    <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar</Button>
                     <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
                       <DialogTrigger asChild>
-                        <Button variant="secondary" className="w-full" size="lg">
-                          <MessageSquare className="mr-2"/> Enviar mensagem
-                        </Button>
+                          {user ? (
+                            sendMessageTrigger
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <span tabIndex={0}>{sendMessageTrigger}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Faça login para enviar uma mensagem.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[480px]">
                         <DialogHeader>
                           <DialogTitle>Enviar mensagem para {providerData.name}</DialogTitle>
                           <DialogDescription>
-                            Descreva o serviço que você precisa. O prestador receberá sua mensagem e poderá respondê-lo.
+                            Descreva o serviço que você precisa. O prestador receberá sua mensagem e poderão conversar.
                           </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSendMessage}>
                           <div className="grid gap-4 py-4">
                               <div className="grid gap-2">
                                 <Label htmlFor="message">Sua Mensagem</Label>
-                                <Textarea id="message" placeholder="Olá, gostaria de um orçamento para..." className="min-h-[120px]" required />
+                                <Textarea id="message" name="initialMessage" placeholder="Olá, gostaria de um orçamento para..." className="min-h-[120px]" required disabled={isSendingMessage} />
                               </div>
                           </div>
                           <DialogFooter>
-                            <Button type="submit"><Send className="mr-2" />Enviar Mensagem</Button>
+                            <Button type="submit" disabled={isSendingMessage}>
+                                {isSendingMessage ? <LoaderCircle className="animate-spin" /> : <Send />}
+                                {isSendingMessage ? 'Enviando...' : 'Enviar Mensagem'}
+                            </Button>
                           </DialogFooter>
                         </form>
                       </DialogContent>

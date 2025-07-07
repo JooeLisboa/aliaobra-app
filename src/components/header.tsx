@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Wrench } from "lucide-react";
+import { Menu, Wrench, MessageSquare } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AuthStatus } from "./auth-status";
+import { useUser } from "@/hooks/use-user";
 
 const AppLogo = () => (
   <Link href="/" className="flex items-center gap-2" prefetch={false}>
@@ -16,7 +17,7 @@ const AppLogo = () => (
   </Link>
 );
 
-const NavLinks = () => (
+const NavLinks = ({ isLoggedIn }: { isLoggedIn: boolean }) => (
   <>
     <Button variant="ghost" asChild>
       <Link href="/" prefetch={false}>
@@ -33,11 +34,21 @@ const NavLinks = () => (
         Sobre Nós
       </Link>
     </Button>
+    {isLoggedIn && (
+      <Button variant="ghost" asChild>
+        <Link href="/chat" prefetch={false} className="flex items-center gap-1">
+          <MessageSquare className="h-4 w-4" />
+          Mensagens
+        </Link>
+      </Button>
+    )}
   </>
 );
 
 export function Header() {
   const isMobile = useIsMobile();
+  const { user } = useUser();
+  const isLoggedIn = !!user;
 
   if (isMobile) {
     return (
@@ -54,8 +65,8 @@ export function Header() {
             <SheetContent side="right">
               <nav className="grid gap-6 text-lg font-medium mt-8">
                 <AppLogo />
-                <NavLinks />
-                <div className="mt-4">
+                <NavLinks isLoggedIn={isLoggedIn} />
+                <div className="mt-4 border-t pt-4">
                   <AuthStatus />
                 </div>
               </nav>
@@ -70,8 +81,8 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <AppLogo />
-        <nav className="hidden md:flex items-center gap-4 lg:gap-6 mx-6 text-sm font-medium">
-          <NavLinks />
+        <nav className="hidden md:flex items-center gap-1 lg:gap-2 mx-6 text-sm font-medium">
+          <NavLinks isLoggedIn={isLoggedIn} />
         </nav>
         <div className="ml-auto flex items-center gap-4">
           <AuthStatus />

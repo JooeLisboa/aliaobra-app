@@ -41,3 +41,27 @@ export type Provider = {
     name: string;
   };
 };
+
+export type ChatMessage = {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: number;
+};
+
+export type Chat = {
+  id: string;
+  participantIds: string[];
+  participantInfo: {
+    [key: string]: {
+      name: string;
+      avatarUrl: string;
+    };
+  };
+  lastMessage?: {
+    text: string;
+    timestamp: number;
+    senderId: string;
+  };
+  updatedAt: number;
+};
