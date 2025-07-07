@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StarRating } from '@/components/star-rating';
 import { ReviewCard } from '@/components/review-card';
-import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Send } from 'lucide-react';
+import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Send, LoaderCircle } from 'lucide-react';
 import { ReviewForm } from '@/components/review-form';
 import { ProviderCard } from '@/components/provider-card';
 import type { PortfolioItem, Provider } from '@/lib/types';
@@ -21,17 +21,79 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
-
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
-  // We find the provider once and use it as initial state
-  const initialProvider = providers.find((p) => p.id === params.id);
-  
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
+  const [providerData, setProviderData] = useState<Provider | null>(); // undefined: loading, null: not found
 
-  // Handle case where provider is not found
-  if (!initialProvider) {
+  // Find provider on client to avoid hydration mismatch.
+  useEffect(() => {
+    const foundProvider = providers.find((p) => p.id === params.id);
+    setProviderData(foundProvider || null);
+  }, [params.id]);
+
+  // This effect runs once on the client to avoid hydration mismatches for time-based UI
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // This effect sets up a timer to re-render the component and update time-based UI
+  useEffect(() => {
+    if (providerData && providerData.status === 'Em Serviço') {
+      const timer = setInterval(() => {
+        // Trigger a re-render to check if the 1-hour mark has passed
+        setProviderData(current => current ? { ...current } : null);
+      }, 1000 * 30); // Check every 30 seconds
+      return () => clearInterval(timer);
+    }
+  }, [providerData]);
+
+  const handleAcceptService = () => {
+    if (providerData) {
+      setProviderData({
+        ...providerData,
+        status: 'Em Serviço',
+        serviceAcceptedAt: Date.now(),
+      });
+    }
+  };
+
+  const handleFinishService = () => {
+    if (providerData) {
+      setProviderData({
+        ...providerData,
+        status: 'Disponível',
+        serviceAcceptedAt: undefined,
+      });
+    }
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (providerData) {
+      toast({
+        title: "Mensagem Enviada!",
+        description: `Sua mensagem foi enviada para ${providerData.name}.`,
+      });
+      setMessageOpen(false);
+    }
+  };
+
+  // Loading state
+  if (providerData === undefined) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-96 text-muted-foreground">
+          <LoaderCircle className="w-8 h-8 animate-spin mr-4" />
+          Carregando perfil...
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state
+  if (providerData === null) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-4xl font-bold">404 - Profissional Não Encontrado</h1>
@@ -43,53 +105,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     );
   }
 
-  // Since we checked for initialProvider, we can safely type state as Provider
-  const [providerData, setProviderData] = useState<Provider>(initialProvider);
-
-  // This effect runs once on the client to avoid hydration mismatches
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // This effect sets up a timer to re-render the component and update time-based UI
-  useEffect(() => {
-    if (providerData.status === 'Em Serviço') {
-      const timer = setInterval(() => {
-        // Trigger a re-render to check if the 1-hour mark has passed
-        // Use updater function to get the latest state, prevents stale closures
-        setProviderData(current => ({ ...current }));
-      }, 1000 * 30); // Check every 30 seconds
-      return () => clearInterval(timer);
-    }
-  }, [providerData.status]); // Depend only on status to avoid an infinite effect loop
-
-
-  const handleAcceptService = () => {
-    setProviderData({
-      ...providerData,
-      status: 'Em Serviço',
-      serviceAcceptedAt: Date.now(),
-    });
-  };
-
-  const handleFinishService = () => {
-    setProviderData({
-      ...providerData,
-      status: 'Disponível',
-      serviceAcceptedAt: undefined, // Clear the timestamp
-    });
-  };
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, this would get the message text and send it
-    toast({
-      title: "Mensagem Enviada!",
-      description: `Sua mensagem foi enviada para ${providerData.name}.`,
-    });
-    setMessageOpen(false); // Close the dialog
-  };
-
   const isAgency = providerData.type === 'agency';
 
   const managedProviders = isAgency
@@ -100,7 +115,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     ? managedProviders.flatMap(p => p.portfolio)
     : providerData.portfolio;
 
-  // Logic for the 1-hour delay
   const serviceAcceptedAt = providerData.serviceAcceptedAt || 0;
   const oneHourInMs = 60 * 60 * 1000;
   const timeSinceAccepted = isClient ? Date.now() - serviceAcceptedAt : 0;
@@ -160,7 +174,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                       ) : (
                         <Tooltip delayDuration={100}>
                           <TooltipTrigger asChild>
-                            {/* The div wrapper is needed for the tooltip to work on a disabled button */}
                             <div className="w-full">
                               <Button onClick={handleFinishService} disabled={!canFinishService} className="w-full" size="lg">
                                 Finalizar Serviço
