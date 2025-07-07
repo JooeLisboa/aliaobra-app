@@ -31,6 +31,10 @@ export default function SignupPage() {
               <Input id="full-name" placeholder="Seu nome" required />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input id="cpf" placeholder="000.000.000-00" required />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
