@@ -35,6 +35,7 @@ export async function createUserProfile(data: UserProfileData) {
            status: 'Disponível',
            portfolio: [],
            reviews: [],
+           isVerified: false,
            type: data.userType === 'provider' ? 'individual' : 'agency',
        };
 

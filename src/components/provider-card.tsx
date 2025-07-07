@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/star-rating';
-import { MapPin, Briefcase } from 'lucide-react';
+import { MapPin, Briefcase, ShieldCheck } from 'lucide-react';
 import type { Provider } from '@/lib/types';
 
 interface ProviderCardProps {
@@ -44,6 +44,12 @@ export function ProviderCard({ provider }: ProviderCardProps) {
                 <Briefcase className="w-3 h-3" />
                 Agência
               </Badge>
+            )}
+            {provider.isVerified && (
+                <Badge variant="outline" className="flex items-center gap-1 border-green-500 text-green-600">
+                    <ShieldCheck className="w-3 h-3" />
+                    Verificado
+                </Badge>
             )}
            </div>
           <div className="flex items-center text-sm text-muted-foreground mt-2">

@@ -33,6 +33,7 @@ export type Provider = {
   portfolio: PortfolioItem[];
   reviews: Review[];
   type: 'individual' | 'agency';
+  isVerified: boolean;
   // For agencies
   managedProviderIds?: string[];
   // For individuals belonging to an agency

@@ -11,11 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StarRating } from '@/components/star-rating';
 import { ReviewCard } from '@/components/review-card';
-import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Send, LoaderCircle } from 'lucide-react';
+import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Send, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { ReviewForm } from '@/components/review-form';
 import { ProviderCard } from '@/components/provider-card';
 import type { PortfolioItem, Provider } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/lib/hooks/use-user';
 import { startChat } from '@/lib/chat-actions';
-
+import { updateProviderStatus } from '@/lib/provider-actions';
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
@@ -35,6 +35,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const [providerData, setProviderData] = useState<Provider | null>();
   const [managedProviders, setManagedProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingStatus, startStatusUpdate] = useTransition();
 
   useEffect(() => {
     const fetchProviderData = async () => {
@@ -64,26 +65,40 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     }
   }, [providerData]);
 
-  const handleAcceptService = () => {
-    if (providerData) {
-      setProviderData({
-        ...providerData,
+  const handleAcceptService = async () => {
+    if (!providerData) return;
+    startStatusUpdate(async () => {
+      const result = await updateProviderStatus({
+        providerId: providerData.id,
         status: 'Em Serviço',
         serviceAcceptedAt: Date.now(),
       });
-      // TODO: Here you would also update the data in Firestore
-    }
+
+      if (result.success) {
+        setProviderData((prev) => (prev ? { ...prev, status: 'Em Serviço', serviceAcceptedAt: Date.now() } : null));
+        toast({ title: 'Serviço iniciado!', description: 'O status do profissional foi atualizado.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Erro', description: result.error });
+      }
+    });
   };
 
-  const handleFinishService = () => {
-    if (providerData) {
-      setProviderData({
-        ...providerData,
+  const handleFinishService = async () => {
+    if (!providerData) return;
+    startStatusUpdate(async () => {
+      const result = await updateProviderStatus({
+        providerId: providerData.id,
         status: 'Disponível',
         serviceAcceptedAt: undefined,
       });
-      // TODO: Here you would also update the data in Firestore
-    }
+
+      if (result.success) {
+        setProviderData((prev) => (prev ? { ...prev, status: 'Disponível', serviceAcceptedAt: undefined } : null));
+        toast({ title: 'Serviço finalizado!', description: 'O profissional está disponível novamente.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Erro', description: result.error });
+      }
+    });
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -181,6 +196,16 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                 </Avatar>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold">{providerData.name}</h1>
+                  {providerData.isVerified && (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <ShieldCheck className="w-6 h-6 text-green-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Profissional Verificado</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                   {isAgency && <Briefcase className="w-6 h-6 text-primary" />}
                 </div>
                 <p className="text-muted-foreground">{providerData.category}</p>
@@ -211,13 +236,17 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                 {!isAgency && (
                     <div className="w-full mb-4 flex flex-col gap-2">
                       {providerData.status === 'Disponível' ? (
-                        <Button onClick={handleAcceptService} className="w-full" size="lg">Aceitar Serviço</Button>
+                        <Button onClick={handleAcceptService} className="w-full" size="lg" disabled={isUpdatingStatus}>
+                          {isUpdatingStatus && <LoaderCircle className="animate-spin" />}
+                          {isUpdatingStatus ? 'Atualizando...' : 'Aceitar Serviço'}
+                        </Button>
                       ) : (
                         <Tooltip delayDuration={100}>
                           <TooltipTrigger asChild>
                             <div className="w-full">
-                              <Button onClick={handleFinishService} disabled={!canFinishService} className="w-full" size="lg">
-                                Finalizar Serviço
+                              <Button onClick={handleFinishService} disabled={!canFinishService || isUpdatingStatus} className="w-full" size="lg">
+                                {isUpdatingStatus && <LoaderCircle className="animate-spin" />}
+                                {isUpdatingStatus ? 'Finalizando...' : 'Finalizar Serviço'}
                               </Button>
                             </div>
                           </TooltipTrigger>
