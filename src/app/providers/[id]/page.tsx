@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { providers } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,9 +27,24 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const initialProvider = providers.find((p) => p.id === params.id);
   
   const { toast } = useToast();
-  const [providerData, setProviderData] = useState<Provider | undefined>(initialProvider);
   const [isClient, setIsClient] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
+
+  // Handle case where provider is not found
+  if (!initialProvider) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h1 className="text-4xl font-bold">404 - Profissional Não Encontrado</h1>
+        <p className="mt-4 text-lg text-muted-foreground">O profissional que você está procurando não existe ou foi removido.</p>
+        <Button asChild className="mt-8">
+          <Link href="/">Voltar para a Página Inicial</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // Since we checked for initialProvider, we can safely type state as Provider
+  const [providerData, setProviderData] = useState<Provider>(initialProvider);
 
   // This effect runs once on the client to avoid hydration mismatches
   useEffect(() => {
@@ -39,20 +53,17 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
 
   // This effect sets up a timer to re-render the component and update time-based UI
   useEffect(() => {
-    if (providerData?.status === 'Em Serviço') {
+    if (providerData.status === 'Em Serviço') {
       const timer = setInterval(() => {
         // Trigger a re-render to check if the 1-hour mark has passed
-        setProviderData(current => current ? { ...current } : undefined);
+        // Use updater function to get the latest state, prevents stale closures
+        setProviderData(current => ({ ...current }));
       }, 1000 * 30); // Check every 30 seconds
       return () => clearInterval(timer);
     }
-  }, [providerData]);
+  }, [providerData.status]); // Depend only on status to avoid an infinite effect loop
 
 
-  if (!providerData) {
-    notFound();
-  }
-  
   const handleAcceptService = () => {
     setProviderData({
       ...providerData,
