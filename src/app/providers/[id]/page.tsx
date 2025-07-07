@@ -327,11 +327,15 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {managedProviders.map((p) => (
-                          <ProviderCard key={p.id} provider={p} />
-                        ))}
-                      </div>
+                      {managedProviders.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {managedProviders.map((p) => (
+                            <ProviderCard key={p.id} provider={p} />
+                          ))}
+                        </div>
+                      ) : (
+                         <p className="text-muted-foreground">Nenhum profissional na equipe ainda.</p>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
