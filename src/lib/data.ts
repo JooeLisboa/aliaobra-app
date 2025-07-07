@@ -1,9 +1,11 @@
-import { db } from './firebase';
+import { db, areCredsAvailable } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import type { Provider } from './types';
 
 export async function getProviders(): Promise<Provider[]> {
-  // Note: You need to have a 'providers' collection in your Firestore database.
+  if (!areCredsAvailable || !db) {
+    return [];
+  }
   try {
     const providersCollection = collection(db, 'providers');
     const providerSnapshot = await getDocs(providersCollection);
@@ -11,12 +13,14 @@ export async function getProviders(): Promise<Provider[]> {
     return providerList;
   } catch (error) {
     console.error("Error fetching providers: ", error);
-    // In a real app, you'd want to handle this more gracefully
     return [];
   }
 }
 
 export async function getProvider(id: string): Promise<Provider | null> {
+    if (!areCredsAvailable || !db) {
+        return null;
+    }
     try {
         const providerRef = doc(db, 'providers', id);
         const providerSnap = await getDoc(providerRef);
@@ -34,7 +38,7 @@ export async function getProvider(id: string): Promise<Provider | null> {
 }
 
 export async function getProvidersByIds(ids: string[]): Promise<Provider[]> {
-    if (!ids || ids.length === 0) {
+    if (!areCredsAvailable || !db || !ids || ids.length === 0) {
         return [];
     }
     try {

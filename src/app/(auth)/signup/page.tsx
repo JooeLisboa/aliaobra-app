@@ -1,19 +1,106 @@
-import Link from "next/link"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Wrench } from "lucide-react"
+import Link from "next/link";
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from 'zod';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from "@/hooks/use-toast";
+import { auth } from '@/lib/firebase';
+import { createUserProfile } from '@/lib/auth-actions';
+import { Wrench, LoaderCircle } from "lucide-react";
+
+const signupSchema = z.object({
+  fullName: z.string().min(3, { message: 'Nome completo deve ter no mínimo 3 caracteres.' }),
+  cpfCnpj: z.string().min(11, { message: 'CPF/CNPJ deve ter no mínimo 11 caracteres.' }).max(18, { message: 'CPF/CNPJ inválido.' }),
+  email: z.string().email({ message: 'Por favor, insira um email válido.' }),
+  password: z.string().min(6, { message: 'A senha deve ter no mínimo 6 caracteres.' }),
+  userType: z.enum(['client', 'provider', 'agency'], { required_error: 'Por favor, selecione um objetivo.'}),
+});
+
 
 export default function SignupPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const form = useForm<z.infer<typeof signupSchema>>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      fullName: "",
+      cpfCnpj: "",
+      email: "",
+      password: "",
+      userType: "client",
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof signupSchema>) {
+    setIsLoading(true);
+
+    if (!auth) {
+      toast({
+        variant: "destructive",
+        title: "Erro de Configuração",
+        description: "A autenticação do Firebase não está configurada. Por favor, preencha as credenciais no servidor.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+      
+      // 2. Create user profile in Firestore via Server Action
+      const profileResult = await createUserProfile({
+        uid: user.uid,
+        email: user.email!,
+        fullName: values.fullName,
+        cpfCnpj: values.cpfCnpj,
+        userType: values.userType,
+      });
+
+      if (!profileResult.success) {
+        // Ideally, delete the user from Auth to prevent orphaned accounts
+        throw new Error(profileResult.error || 'Falha ao criar o perfil do usuário.');
+      }
+
+      toast({
+        title: "Conta Criada com Sucesso!",
+        description: "Você será redirecionado para a página inicial.",
+      });
+
+      router.push('/');
+
+    } catch (error: any) {
+      console.error(error);
+      let errorMessage = "Ocorreu um erro inesperado.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "Este email já está em uso por outra conta.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      toast({
+        variant: "destructive",
+        title: "Erro ao Criar Conta",
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] bg-background p-4">
       <Card className="mx-auto max-w-lg w-full">
@@ -25,75 +112,114 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="full-name">Nome Completo ou Nome da Agência</Label>
-              <Input id="full-name" placeholder="Seu nome" required />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="cpf">CPF ou CNPJ</Label>
-              <Input id="cpf" placeholder="000.000.000-00" required />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" required />
-            </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-2">
+                      <Label htmlFor="full-name">Nome Completo ou Nome da Agência</Label>
+                      <FormControl>
+                        <Input id="full-name" placeholder="Seu nome" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <div className="grid gap-2">
-              <Label>Qual é o seu objetivo?</Label>
-              <RadioGroup defaultValue="client" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <RadioGroupItem value="client" id="client" className="peer sr-only" />
-                  <Label
-                    htmlFor="client"
-                    className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    Quero Contratar
-                  </Label>
-                </div>
-                <div>
-                  <RadioGroupItem
-                    value="provider"
-                    id="provider"
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor="provider"
-                    className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    Sou Profissional
-                  </Label>
-                </div>
-                <div>
-                  <RadioGroupItem
-                    value="agency"
-                    id="agency"
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor="agency"
-                    className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    Sou uma Agência
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
+                <FormField
+                  control={form.control}
+                  name="cpfCnpj"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-2">
+                      <Label htmlFor="cpf">CPF ou CNPJ</Label>
+                      <FormControl>
+                        <Input id="cpf" placeholder="000.000.000-00" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-2">
+                      <Label htmlFor="email">Email</Label>
+                      <FormControl>
+                        <Input id="email" type="email" placeholder="seu@email.com" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-2">
+                      <Label htmlFor="password">Senha</Label>
+                      <FormControl>
+                        <Input id="password" type="password" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <Button type="submit" className="w-full">
-              Criar Conta
-            </Button>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="userType"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-2">
+                      <Label>Qual é o seu objetivo?</Label>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                          disabled={isLoading}
+                        >
+                          <FormItem>
+                            <FormControl>
+                              <RadioGroupItem value="client" id="client" className="peer sr-only" />
+                            </FormControl>
+                            <Label htmlFor="client" className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                              Quero Contratar
+                            </Label>
+                          </FormItem>
+                          <FormItem>
+                            <FormControl>
+                              <RadioGroupItem value="provider" id="provider" className="peer sr-only" />
+                            </FormControl>
+                            <Label htmlFor="provider" className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                              Sou Profissional
+                            </Label>
+                          </FormItem>
+                          <FormItem>
+                            <FormControl>
+                              <RadioGroupItem value="agency" id="agency" className="peer sr-only" />
+                            </FormControl>
+                            <Label htmlFor="agency" className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                              Sou uma Agência
+                            </Label>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading ? 'Criando conta...' : 'Criar Conta'}
+                </Button>
+            </form>
+          </Form>
           <div className="mt-4 text-center text-sm">
             Já tem uma conta?{" "}
             <Link href="/login" className="underline">
