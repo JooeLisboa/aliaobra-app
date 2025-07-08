@@ -1,8 +1,8 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
-// Hardcoding credentials for debugging. This bypasses .env files to ensure the correct values are used.
 const firebaseConfig = {
   apiKey: "AIzaSyAJuaRmfd4Sl7sojXaWWbSltj-8WyyHEbo",
   authDomain: "serviopro-vjgij.firebaseapp.com",
@@ -22,20 +22,20 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     });
 }
 
-// Check if all required environment variables are present
 const areCredsAvailable = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 let auth: Auth | null = null;
+let storage: FirebaseStorage | null = null;
 
 if (areCredsAvailable) {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   db = getFirestore(app);
   auth = getAuth(app);
+  storage = getStorage(app);
 } else if (typeof window !== 'undefined') {
-  // Log a warning only on the client-side to avoid server-side clutter
   console.warn("Firebase credentials are not set. Firebase features will be disabled.");
 }
 
-export { app, db, auth, areCredsAvailable };
+export { app, db, auth, storage, areCredsAvailable };
