@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StarRating } from '@/components/star-rating';
 import { ReviewCard } from '@/components/review-card';
-import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Send, LoaderCircle, ShieldCheck } from 'lucide-react';
+import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Send, LoaderCircle, ShieldCheck, Info } from 'lucide-react';
 import { ReviewForm } from '@/components/review-form';
 import { ProviderCard } from '@/components/provider-card';
 import type { PortfolioItem, Provider } from '@/lib/types';
@@ -26,6 +26,7 @@ import { useUser } from '@/hooks/use-user';
 import { startChat } from '@/lib/chat-actions';
 import { updateProviderStatus } from '@/lib/provider-actions';
 import { PlanIcon } from '@/components/plan-icon';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
@@ -297,6 +298,13 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
           </div>
 
           <div className="lg:col-span-2">
+             <Alert className="mb-6">
+                <Info className="h-4 w-4" />
+                <AlertTitle className="font-semibold">Lembrete Importante</AlertTitle>
+                <AlertDescription>
+                  A AliaObra é uma plataforma para facilitar o contato. Toda negociação, serviço e pagamento é de responsabilidade exclusiva entre você e o profissional.
+                </AlertDescription>
+            </Alert>
              <Tabs defaultValue={isAgency ? "professionals" : "portfolio"}>
               <TabsList className={`grid w-full ${isAgency ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 {isAgency && <TabsTrigger value="professionals">Profissionais</TabsTrigger>}
