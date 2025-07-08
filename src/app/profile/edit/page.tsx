@@ -63,6 +63,10 @@ export default function EditProfilePage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [newPortfolioItems, setNewPortfolioItems] = useState<NewPortfolioItem[]>([]);
+  
+  const [newPortfolioDesc, setNewPortfolioDesc] = useState('');
+  const [newPortfolioHint, setNewPortfolioHint] = useState('');
+  const [newPortfolioFile, setNewPortfolioFile] = useState<File | null>(null);
 
   const newPortfolioFileRef = useRef<HTMLInputElement>(null);
 
@@ -116,12 +120,10 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleAddPortfolioItem = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const file = formData.get('newPortfolioFile') as File;
-    const description = formData.get('newPortfolioDesc') as string;
-    const hint = formData.get('newPortfolioHint') as string;
+  const handleAddPortfolioItem = () => {
+    const file = newPortfolioFile;
+    const description = newPortfolioDesc;
+    const hint = newPortfolioHint;
 
     if (!file || file.size === 0 || !description || !hint) {
       toast({ variant: 'destructive', title: 'Campos obrigatórios', description: 'Preencha a descrição, a dica para IA e selecione uma imagem.' });
@@ -144,7 +146,13 @@ export default function EditProfilePage() {
       'data-ai-hint': hint,
     };
     setNewPortfolioItems(prev => [...prev, newItem]);
-    (e.target as HTMLFormElement).reset();
+    
+    setNewPortfolioDesc('');
+    setNewPortfolioHint('');
+    setNewPortfolioFile(null);
+    if (newPortfolioFileRef.current) {
+        newPortfolioFileRef.current.value = '';
+    }
   };
 
   const removeNewPortfolioItem = (id: string) => {
@@ -283,25 +291,44 @@ export default function EditProfilePage() {
                   ))}
                   
                   <Card className="p-4 border-dashed">
-                      <form onSubmit={handleAddPortfolioItem} className="space-y-4">
+                      <div className="space-y-4">
                         <h4 className="font-semibold">Adicionar Novo Item ao Portfólio</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                               <Label htmlFor="new-portfolio-desc">Descrição do trabalho</Label>
-                              <Input id="new-portfolio-desc" name="newPortfolioDesc" placeholder="Ex: Reforma de cozinha" required />
+                              <Input 
+                                id="new-portfolio-desc"
+                                placeholder="Ex: Reforma de cozinha"
+                                required
+                                value={newPortfolioDesc}
+                                onChange={(e) => setNewPortfolioDesc(e.target.value)}
+                              />
                           </div>
                           <div className="space-y-2">
                               <Label htmlFor="new-portfolio-hint">Dica para IA (em inglês)</Label>
-                              <Input id="new-portfolio-hint" name="newPortfolioHint" placeholder="Ex: kitchen renovation" required />
+                              <Input
+                                id="new-portfolio-hint"
+                                placeholder="Ex: kitchen renovation"
+                                required
+                                value={newPortfolioHint}
+                                onChange={(e) => setNewPortfolioHint(e.target.value)}
+                              />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="new-portfolio-file">Imagem do trabalho</Label>
-                          <Input id="new-portfolio-file" name="newPortfolioFile" type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} required />
+                          <Input
+                            id="new-portfolio-file"
+                            ref={newPortfolioFileRef}
+                            type="file"
+                            accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                            required
+                            onChange={(e) => setNewPortfolioFile(e.target.files?.[0] || null)}
+                          />
                           <FormDescription>Tamanho máximo: {MAX_FILE_SIZE_MB}MB.</FormDescription>
                         </div>
-                        <Button type="submit"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar ao Portfólio</Button>
-                      </form>
+                        <Button type="button" onClick={handleAddPortfolioItem}><PlusCircle className="mr-2 h-4 w-4" /> Adicionar ao Portfólio</Button>
+                      </div>
                   </Card>
                 </div>
               </section>
