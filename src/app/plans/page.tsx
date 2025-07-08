@@ -1,11 +1,16 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check } from 'lucide-react';
 import Link from 'next/link';
+import { useUser } from '@/hooks/use-user';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const plans = [
   {
     name: 'Básico',
+    id: 'basico',
     price: 'Grátis',
     description: 'Comece a divulgar seu trabalho e a receber avaliações.',
     features: [
@@ -15,10 +20,10 @@ const plans = [
       'Visibilidade na busca padrão'
     ],
     cta: 'Comece Agora',
-    href: '/signup?plan=basico'
   },
   {
     name: 'Profissional',
+    id: 'profissional',
     price: 'R$ 29,90',
     priceFrequency: '/mês',
     description: 'Destaque-se da concorrência e consiga mais clientes.',
@@ -30,11 +35,11 @@ const plans = [
       'Suporte prioritário'
     ],
     cta: 'Assinar Agora',
-    href: '/signup?plan=profissional',
     isFeatured: true
   },
   {
     name: 'Agência',
+    id: 'agencia',
     price: 'R$ 79,90',
     priceFrequency: '/mês',
     description: 'Gerencie múltiplos profissionais em uma única conta.',
@@ -46,11 +51,23 @@ const plans = [
       'Painel de controle da agência'
     ],
     cta: 'Contratar Plano',
-    href: '/signup?plan=agencia'
   }
 ];
 
 export default function PlansPage() {
+  const { user, isLoading } = useUser();
+
+  const getPlanHref = (planId: 'basico' | 'profissional' | 'agencia') => {
+    if (isLoading) return '#';
+    // For basic plan, there is no checkout, just go to profile
+    if (planId === 'basico') {
+      return user ? '/profile/edit' : '/signup?plan=basico';
+    }
+    // For paid plans, go to checkout if logged in, otherwise signup
+    return user ? `/checkout?plan=${planId}` : `/signup?plan=${planId}`;
+  };
+
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
@@ -84,9 +101,13 @@ export default function PlansPage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full" size="lg" variant={plan.isFeatured ? 'default' : 'outline'}>
-                <Link href={plan.href}>{plan.cta}</Link>
-              </Button>
+               {isLoading ? (
+                <Skeleton className="h-11 w-full" />
+              ) : (
+                <Button asChild className="w-full" size="lg" variant={plan.isFeatured ? 'default' : 'outline'}>
+                  <Link href={getPlanHref(plan.id as any)}>{plan.cta}</Link>
+                </Button>
+              )}
             </CardFooter>
           </Card>
         ))}
