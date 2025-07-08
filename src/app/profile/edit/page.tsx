@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useTransition, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,6 +55,7 @@ type NewPortfolioItem = {
 export default function EditProfilePage() {
   const { user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -105,6 +106,16 @@ export default function EditProfilePage() {
     };
     fetchProviderData();
   }, [user, isUserLoading, router, form]);
+
+  useEffect(() => {
+    if (searchParams.get('plan_success')) {
+        toast({
+            title: "Assinatura Ativada!",
+            description: "Seu plano foi atualizado com sucesso.",
+        });
+        router.replace('/profile/edit', { scroll: false });
+    }
+  }, [searchParams, toast, router]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,13 +192,13 @@ export default function EditProfilePage() {
         formData.append('avatar', avatarFile);
       }
 
-      const result = await updateProfileDetails(formData);
+      const res = await updateProfileDetails(formData);
 
-      if (result.success) {
+      if (res.success) {
         toast({ title: 'Informações Atualizadas!', description: 'Suas informações básicas foram salvas com sucesso.' });
         router.refresh();
       } else {
-        toast({ variant: 'destructive', title: 'Erro ao Atualizar', description: result.error });
+        toast({ variant: 'destructive', title: 'Erro ao Atualizar', description: res.error });
       }
     });
   };

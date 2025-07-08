@@ -1,6 +1,6 @@
 import { db, areCredsAvailable } from './firebase';
-import { collection, getDocs, doc, getDoc, query } from 'firebase/firestore';
-import type { Provider, Service, Proposal } from './types';
+import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
+import type { Provider, Service, Proposal, StripeProduct, StripePrice } from './types';
 
 const planOrder: Record<string, number> = {
   'Agência': 0,
@@ -115,4 +115,35 @@ export async function getProposalsForService(serviceId: string): Promise<Proposa
     console.error("Error fetching proposals: ", error);
     return [];
   }
+}
+
+export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
+    if (!areCredsAvailable || !db) return [];
+
+    try {
+        const productsRef = collection(db, 'products');
+        const productsQuery = query(productsRef, where('active', '==', true));
+        const querySnapshot = await getDocs(productsQuery);
+        
+        const products: StripeProduct[] = [];
+
+        for (const productDoc of querySnapshot.docs) {
+            const productData = { id: productDoc.id, ...productDoc.data() } as StripeProduct;
+            productData.prices = [];
+
+            const pricesRef = collection(productDoc.ref, 'prices');
+            const pricesQuery = query(pricesRef, where('active', '==', true));
+            const priceSnap = await getDocs(pricesQuery);
+
+            priceSnap.forEach(priceDoc => {
+                 productData.prices.push({ id: priceDoc.id, ...priceDoc.data() } as StripePrice);
+            });
+            products.push(productData);
+        }
+        return products;
+
+    } catch (error) {
+        console.error("Error fetching active products with prices:", error);
+        return [];
+    }
 }

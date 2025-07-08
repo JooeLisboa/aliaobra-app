@@ -1,4 +1,6 @@
+
 import type { User as FirebaseAuthUser } from 'firebase/auth';
+import type { DocumentReference } from 'firebase/firestore';
 
 export type Review = {
   id: string;
@@ -56,8 +58,42 @@ export type Provider = {
   };
 };
 
+export type StripePrice = {
+  id: string;
+  active: boolean;
+  currency: string;
+  description: string | null;
+  type: 'one_time' | 'recurring';
+  unit_amount: number | null;
+  interval?: 'day' | 'week' | 'month' | 'year';
+  [key: string]: any;
+};
+
+export type StripeProduct = {
+  id: string;
+  active: boolean;
+  name: string;
+  description: string | null;
+  images: string[];
+  prices: StripePrice[];
+  metadata?: {
+    isFeatured?: string;
+    features?: string;
+    [key: string]: any;
+  }
+  [key:string]: any;
+};
+
+export type StripeSubscription = {
+  id: string;
+  status: 'active' | 'trialing' | 'incomplete' | 'past_due' | 'canceled' | 'unpaid';
+  product: DocumentReference<StripeProduct>;
+  [key: string]: any;
+};
+
 export type AppUser = FirebaseAuthUser & {
   profile?: Provider | UserProfile;
+  subscription?: StripeSubscription | null;
 };
 
 

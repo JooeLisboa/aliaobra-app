@@ -3,126 +3,108 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Info, Send } from 'lucide-react';
+import { Check, Info, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
-import type { Provider } from '@/lib/types';
+import type { StripeProduct } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PlanIcon } from '@/components/plan-icon';
-import { getProvider } from '@/lib/data';
+import { getActiveProductsWithPrices } from '@/lib/data';
 import { TooltipProvider } from '@/components/ui/tooltip';
-
-const plans = [
-  {
-    name: 'Básico',
-    id: 'basico',
-    price: 'Grátis',
-    description: 'Crie seu perfil e seja encontrado por clientes.',
-    features: [
-      'Perfil público visível na busca',
-      'Receber contatos e mensagens diretas',
-      'Até 5 fotos no portfólio',
-      'Receber avaliações de clientes'
-    ],
-    cta: 'Comece Agora',
-  },
-  {
-    name: 'Profissional',
-    id: 'profissional',
-    price: 'R$ 29,90',
-    priceFrequency: '/mês',
-    description: 'A ferramenta essencial para quem busca trabalho ativamente.',
-    features: [
-      'Todos os benefícios do Básico',
-      'Envie propostas ILIMITADAS para os serviços do mural',
-      'Perfil em destaque nos resultados de busca',
-      'Selo de Profissional Verificado',
-      'Ícone de Assinante Ouro',
-      'Portfólio com até 20 fotos',
-    ],
-    cta: 'Assinar Agora',
-    isFeatured: true
-  },
-  {
-    name: 'Agência',
-    id: 'agencia',
-    price: 'R$ 79,90',
-    priceFrequency: '/mês',
-    description: 'Gerencie múltiplos profissionais e domine o mercado.',
-    features: [
-      'Todos os benefícios do Profissional',
-      'Gerenciamento de até 10 perfis de membros',
-      'Ícone de Agência Esmeralda',
-      'Painel de controle da agência'
-    ],
-    cta: 'Contratar Plano',
-  }
-];
-
-const planHierarchy: Record<string, number> = {
-    'Básico': 0,
-    'Profissional': 1,
-    'Agência': 2,
-};
+import { loadStripe } from '@stripe/stripe-js';
+import { addDoc, collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function PlansPage() {
   const { user, isLoading: isUserLoading } = useUser();
-  const [provider, setProvider] = useState<Provider | null>(null);
-  const [isLoadingProvider, setIsLoadingProvider] = useState(true);
+  const [products, setProducts] = useState<StripeProduct[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
+  const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
-    if (user) {
-      setIsLoadingProvider(true);
-      getProvider(user.uid).then(providerData => {
-        setProvider(providerData);
-      }).finally(() => {
-        setIsLoadingProvider(false);
+    const fetchProducts = async () => {
+      setIsLoadingProducts(true);
+      const prods = await getActiveProductsWithPrices();
+      prods.forEach(p => p.prices.sort((a,b) => (a.unit_amount ?? 0) - (b.unit_amount ?? 0)));
+      prods.sort((a,b) => {
+        const aPrice = a.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
+        const bPrice = b.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
+        return aPrice - bPrice;
       });
-    } else if (!isUserLoading) {
-      setIsLoadingProvider(false);
+      setProducts(prods);
+      setIsLoadingProducts(false);
     }
-  }, [user, isUserLoading]);
+    fetchProducts();
+  }, []);
 
-  const getButtonState = (planId: 'basico' | 'profissional' | 'agencia') => {
-    const planDetails = plans.find(p => p.id === planId)!;
-    const targetPlanName = planDetails.name as Provider['plan'];
+  const handleCheckout = async (priceId: string) => {
+    if (!user) {
+      router.push(`/signup?redirect=/plans`);
+      return;
+    }
+    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+        toast({ variant: 'destructive', title: 'Erro de Configuração', description: 'A chave publicável do Stripe não está configurada.' });
+        return;
+    }
+
+    setIsRedirecting(priceId);
+
+    try {
+        const checkoutSessionRef = collection(db, 'customers', user.uid, 'checkout_sessions');
+        const docRef = await addDoc(checkoutSessionRef, {
+            price: priceId,
+            success_url: `${window.location.origin}/profile/edit?plan_success=true`,
+            cancel_url: window.location.origin,
+            allow_promotion_codes: true,
+        });
+
+        onSnapshot(docRef, async (snap) => {
+            const { error, sessionId } = snap.data() || {};
+            if (error) {
+                toast({ variant: 'destructive', title: 'Erro no Pagamento', description: error.message });
+                console.error(error);
+                setIsRedirecting(null);
+                return;
+            }
+            if (sessionId) {
+                const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+                if (stripe) {
+                    await stripe.redirectToCheckout({ sessionId });
+                } else {
+                    toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar o Stripe.' });
+                    setIsRedirecting(null);
+                }
+            }
+        });
+    } catch(error: any) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível iniciar o checkout. Tente novamente.' });
+        console.error(error);
+        setIsRedirecting(null);
+    }
+  };
+  
+  const getButtonState = (product: StripeProduct) => {
+    const price = product.prices.find(p => p.type === 'recurring');
+    if (!price) return { text: 'Indisponível', disabled: true, variant: 'secondary' as 'secondary' };
 
     if (!user) {
-        const href = planId === 'basico' ? '/signup' : `/signup?plan=${planId}`;
-        return { href, text: planDetails.cta, disabled: false, variant: planDetails.isFeatured ? 'default' : 'outline' };
+        return { text: 'Assinar Agora', disabled: false, variant: product.metadata?.isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
     }
     
-    // User is logged in, but might not be a provider yet.
-    // The checkout flow can now handle creating a provider profile.
-    if (!provider) {
-       const href = `/checkout?plan=${planId}`;
-       return { href, text: "Assinar Agora", disabled: false, variant: planDetails.isFeatured ? 'default' : 'outline' }
+    if (user.subscription?.product?.id === product.id) {
+        return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as 'secondary' };
     }
-
-    const currentPlanLevel = planHierarchy[provider.plan ?? 'Básico'];
-    const targetPlanLevel = planHierarchy[targetPlanName!];
-
-    if (currentPlanLevel === targetPlanLevel) {
-      return { href: '#', text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as 'secondary' };
-    }
-
-    if (currentPlanLevel > targetPlanLevel) {
-      // Downgrade logic can be complex, disable for now.
-      return { href: '#', text: 'Fazer Downgrade', disabled: true, variant: 'outline' as 'outline' };
-    }
-
-    // Upgrading
-    return {
-      href: `/checkout?plan=${planId}`,
-      text: 'Fazer Upgrade',
-      disabled: false,
-      variant: planDetails.isFeatured ? 'default' : 'outline',
-    };
+    
+    return { text: 'Fazer Upgrade', disabled: false, variant: product.metadata?.isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
   };
 
-  const isLoading = isUserLoading || isLoadingProvider;
+  const isLoading = isUserLoading || isLoadingProducts;
 
   return (
     <TooltipProvider>
@@ -148,42 +130,55 @@ export default function PlansPage() {
             </AlertDescription>
         </Alert>
 
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan) => {
-             const buttonState = getButtonState(plan.id as any);
-             return(
-              <Card key={plan.name} className={`flex flex-col ${plan.isFeatured ? 'border-primary shadow-lg' : ''}`}>
-                <CardHeader className="text-center">
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <div className="text-center mb-6">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    {plan.priceFrequency && <span className="text-muted-foreground">{plan.priceFrequency}</span>}
-                  </div>
-                  <ul className="space-y-3">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start">
-                        <Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" />
-                        <span className="text-sm text-foreground/90">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                   {isLoading ? (
-                    <Skeleton className="h-11 w-full" />
-                  ) : (
-                    <Button asChild className="w-full" size="lg" variant={buttonState.variant} disabled={buttonState.disabled}>
-                      <Link href={buttonState.href}>{buttonState.text}</Link>
+          {isLoading ? (
+             Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
+             ))
+          ) : (
+            products.map((product) => {
+              const buttonState = getButtonState(product);
+              const price = product.prices.find(p => p.type === 'recurring');
+              if (!price) return null;
+
+              return (
+                <Card key={product.id} className={`flex flex-col ${product.metadata?.isFeatured ? 'border-primary shadow-lg' : ''}`}>
+                  <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">{product.name}</CardTitle>
+                    <CardDescription>{product.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <div className="text-center mb-6">
+                      <span className="text-4xl font-bold">
+                        {(price.unit_amount! / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                      {price.recurring && <span className="text-muted-foreground">/{price.recurring.interval}</span>}
+                    </div>
+                    <ul className="space-y-3">
+                      {(product.metadata?.features ?? '').split(',').map((feature: string) => (
+                        <li key={feature} className="flex items-start">
+                          <Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" />
+                          <span className="text-sm text-foreground/90">{feature.trim()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="w-full" 
+                      size="lg" 
+                      variant={buttonState.variant} 
+                      disabled={buttonState.disabled || !!isRedirecting}
+                      onClick={() => handleCheckout(price.id)}
+                    >
+                      {isRedirecting === price.id && <LoaderCircle className="animate-spin mr-2" />}
+                      {isRedirecting === price.id ? 'Aguarde...' : buttonState.text}
                     </Button>
-                  )}
-                </CardFooter>
-              </Card>
-             )
-          })}
+                  </CardFooter>
+                </Card>
+              )
+            })
+          )}
         </div>
       </div>
     </TooltipProvider>
