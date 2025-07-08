@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -12,7 +13,6 @@ import { createService } from '@/lib/service-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { LoaderCircle, Send } from 'lucide-react';
@@ -56,7 +56,6 @@ export default function NewServicePage() {
         startTransition(async () => {
             const formData = new FormData();
             formData.append('clientId', user!.uid);
-            formData.append('clientName', user!.profile?.name || user!.email!);
             formData.append('title', values.title);
             formData.append('description', values.description);
             formData.append('category', values.category);

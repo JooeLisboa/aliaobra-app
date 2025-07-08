@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from 'react';
@@ -133,10 +134,8 @@ export function ReviewForm({ providerId }: { providerId: string }) {
         rating: values.rating,
         comment: values.comment,
         imageUrl: capturedImage,
-        // Pass author details securely
+        // SECURITY: Pass only the author's ID. Server will fetch profile details.
         authorId: user.uid,
-        authorName: user.displayName || user.email || "Usuário Anônimo",
-        authorAvatarUrl: user.photoURL || `https://placehold.co/100x100.png`
       });
       if (result.success) {
         toast({ title: "Avaliação Enviada!", description: "Obrigado por seu feedback. A página será atualizada." });

@@ -67,10 +67,8 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
 
     setIsSendingMessage(true);
     formData.append('providerId', providerData.id);
-    // Securely add client info
+    // SECURITY: Pass only the client's ID. The server action will fetch the user's profile info.
     formData.append('clientId', user.uid);
-    formData.append('clientName', user.displayName || user.email || 'Cliente');
-    formData.append('clientAvatar', user.photoURL || `https://placehold.co/100x100.png`);
     
     const result = await startChat(formData);
     

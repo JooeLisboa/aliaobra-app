@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getService, getProposalsForService } from '@/lib/data';
-import type { Service, Proposal, Provider } from '@/lib/types';
+import type { Service, Proposal } from '@/lib/types';
 import { LoaderCircle, User, Calendar, Tag, DollarSign, Edit, Send, Check, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ import { createProposal, acceptProposal } from '@/lib/service-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-function ProposalForm({ serviceId, providerId, providerProfile }: { serviceId: string; providerId: string; providerProfile: Provider }) {
+function ProposalForm({ serviceId, providerId }: { serviceId: string; providerId: string; }) {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -31,8 +32,6 @@ function ProposalForm({ serviceId, providerId, providerProfile }: { serviceId: s
             const formData = new FormData(event.currentTarget);
             formData.append('serviceId', serviceId);
             formData.append('providerId', providerId);
-            formData.append('providerName', providerProfile.name);
-            formData.append('providerAvatarUrl', providerProfile.avatarUrl);
 
             const result = await createProposal(formData);
 
@@ -263,7 +262,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                                   </AlertDescription>
                                 </Alert>
                             ) : isSubscriber ? (
-                                <ProposalForm serviceId={service.id} providerId={user.uid} providerProfile={user.profile as Provider} />
+                                <ProposalForm serviceId={service.id} providerId={user.uid} />
                             ) : (
                                 <Alert variant="default" className="border-primary/50 text-center">
                                     <ShieldAlert className="h-4 w-4" />

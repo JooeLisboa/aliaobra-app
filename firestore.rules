@@ -4,40 +4,58 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // App-specific rules
+    // AliaObra Application Rules
+    // ====================================
+
+    // Users collection for clients
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
 
+    // Providers & Agencies collection
     match /providers/{providerId} {
+      // Anyone can read a provider's public profile
       allow read: if true;
-      allow update: if request.auth.uid == providerId || 
-                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviews']) && 
-                        request.resource.data.reviews.size() == resource.data.reviews.size() + 1);
+      // Only the authenticated user can create their own provider profile
+      allow create: if request.auth.uid == providerId;
+      // Only the provider can update their own profile details
+      // Note: Review creation is handled by a secure server action/transaction
+      allow update: if request.auth.uid == providerId;
     }
-    
+
+    // Services (jobs) collection
     match /services/{serviceId} {
+      // Anyone can read the list of open services
       allow read: if true;
-      allow create: if request.auth != null;
+      // Only the authenticated owner can create a service
+      allow create: if request.auth.uid == request.resource.data.clientId;
+      // Only the owner can update their service (e.g., to edit or accept a proposal)
       allow update: if request.auth.uid == resource.data.clientId;
 
+      // Proposals subcollection
       match /proposals/{proposalId} {
-        allow read: if request.auth.uid == resource.data.providerId || 
-                       get(/databases/$(database)/documents/services/$(serviceId)).data.clientId == request.auth.uid;
-        allow create: if request.auth != null && 
-                         get(/databases/$(database)/documents/services/$(serviceId)).data.clientId != request.auth.uid;
+        // Only the service owner can read the proposals for their service
+        allow read: if request.auth.uid == get(/databases/$(database)/documents/services/$(serviceId)).data.clientId;
+        // A provider can only create a proposal for themselves
+        allow create: if request.auth.uid == request.resource.data.providerId;
       }
     }
 
+    // Chats collection
     match /chats/{chatId} {
+      // A user can only read or write to a chat if they are a participant
       allow read, write: if request.auth.uid in resource.data.participantIds;
       
+      // Messages subcollection inherits the parent rule, but we make it explicit for clarity
       match /messages/{messageId} {
          allow read, write: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
       }
     }
 
-    // Stripe Payments extension rules
+
+    // Stripe Payments Extension Rules
+    // ====================================
+
     match /customers/{uid} {
       allow read: if request.auth.uid == uid;
 

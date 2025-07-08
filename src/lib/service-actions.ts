@@ -1,14 +1,13 @@
+
 'use server';
 
-import { collection, addDoc, doc, runTransaction } from 'firebase/firestore';
+import { collection, addDoc, doc, runTransaction, getDoc } from 'firebase/firestore';
 import { db, areCredsAvailable } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { redirect } from 'next/navigation';
 
 const createServiceSchema = z.object({
   clientId: z.string().min(1, 'Client ID is required.'),
-  clientName: z.string().min(1, 'Client name is required.'),
   title: z.string().min(5, 'O título deve ter no mínimo 5 caracteres.').max(100, 'O título é muito longo.'),
   description: z.string().min(20, 'A descrição deve ter no mínimo 20 caracteres.').max(2000, 'A descrição é muito longa.'),
   category: z.string().min(3, 'A categoria é obrigatória.'),
@@ -28,12 +27,24 @@ export async function createService(formData: FormData) {
     return { success: false, error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors };
   }
 
-  const { clientId, clientName, title, description, category, budget } = validation.data;
+  const { clientId, title, description, category, budget } = validation.data;
   
   try {
-    const docRef = await addDoc(collection(db, 'services'), {
+    // SECURITY: Fetch client name from server to prevent impersonation.
+    const clientRef = doc(db, 'users', clientId);
+    const clientSnap = await getDoc(clientRef);
+
+    if (!clientSnap.exists()) {
+        const providerSnap = await getDoc(doc(db, 'providers', clientId));
+        if (!providerSnap.exists()) {
+            return { success: false, error: 'Usuário não encontrado.' };
+        }
+    }
+    const clientName = (clientSnap.data()?.name || (await getDoc(doc(db, 'providers', clientId))).data()?.name) ?? 'Usuário';
+
+    await addDoc(collection(db, 'services'), {
       clientId,
-      clientName,
+      clientName, // Use the secure name
       title,
       description,
       category,
@@ -56,8 +67,6 @@ export async function createService(formData: FormData) {
 const createProposalSchema = z.object({
     serviceId: z.string().min(1),
     providerId: z.string().min(1),
-    providerName: z.string().min(1),
-    providerAvatarUrl: z.string().url(),
     amount: z.coerce.number().positive('O valor da proposta deve ser positivo.'),
     message: z.string().min(10, 'A mensagem deve ter no mínimo 10 caracteres.'),
 });
@@ -73,12 +82,24 @@ export async function createProposal(formData: FormData) {
         return { success: false, error: 'Dados da proposta inválidos.', details: validation.error.flatten() };
     }
 
-    const { serviceId, ...proposalData } = validation.data;
+    const { serviceId, providerId, amount, message } = validation.data;
 
     try {
+        // SECURITY: Fetch provider details from server.
+        const providerRef = doc(db, 'providers', providerId);
+        const providerSnap = await getDoc(providerRef);
+        if (!providerSnap.exists()) {
+            return { success: false, error: 'Perfil de provedor não encontrado.' };
+        }
+        const providerProfile = providerSnap.data();
+
         const proposalsRef = collection(db, 'services', serviceId, 'proposals');
         await addDoc(proposalsRef, {
-            ...proposalData,
+            providerId,
+            providerName: providerProfile.name,
+            providerAvatarUrl: providerProfile.avatarUrl,
+            amount,
+            message,
             createdAt: Date.now(),
             status: 'pending'
         });

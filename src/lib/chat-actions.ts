@@ -11,12 +11,11 @@ import {
   query,
   where,
   getDocs,
-  orderBy,
   Timestamp,
   writeBatch,
 } from 'firebase/firestore';
 import { db, areCredsAvailable } from '@/lib/firebase';
-import type { Chat } from '@/lib/types';
+import type { Chat, Provider, UserProfile } from '@/lib/types';
 import { getProvider } from './data';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
@@ -24,8 +23,6 @@ import { revalidatePath } from 'next/cache';
 const startChatSchema = z.object({
   providerId: z.string(),
   clientId: z.string(),
-  clientName: z.string(),
-  clientAvatar: z.string().url(),
   initialMessage: z.string().min(1, "A mensagem não pode estar vazia.").max(500, "A mensagem é muito longa."),
 });
 
@@ -51,7 +48,7 @@ export async function startChat(formData: FormData) {
     return { success: false, error: 'Dados inválidos.', details: validation.error.flatten() };
   }
 
-  const { providerId, clientId, clientName, clientAvatar, initialMessage } = validation.data;
+  const { providerId, clientId, initialMessage } = validation.data;
   
   if (providerId === clientId) {
     return { success: false, error: 'Você não pode iniciar uma conversa consigo mesmo.' };
@@ -65,14 +62,34 @@ export async function startChat(formData: FormData) {
     const chatDoc = await getDoc(chatRef);
 
     if (!chatDoc.exists()) {
+      // SECURITY: Fetch client and provider profiles from the server to prevent impersonation.
       const provider = await getProvider(providerId);
       if (!provider) {
         return { success: false, error: 'Provedor não encontrado.' };
       }
+
+      let clientProfile: { name: string, avatarUrl: string } | null = null;
+      const providerAsClientSnap = await getDoc(doc(db, 'providers', clientId));
+      if (providerAsClientSnap.exists()) {
+          const data = providerAsClientSnap.data() as Provider;
+          clientProfile = { name: data.name, avatarUrl: data.avatarUrl };
+      } else {
+          const userSnap = await getDoc(doc(db, 'users', clientId));
+          if (userSnap.exists()) {
+              const data = userSnap.data() as UserProfile;
+              // Clients don't have avatars in their profile, so we use a placeholder.
+              clientProfile = { name: data.name, avatarUrl: `https://placehold.co/100x100.png` };
+          }
+      }
+
+      if (!clientProfile) {
+          return { success: false, error: 'Perfil do cliente não encontrado.' };
+      }
+
       const newChatData: Omit<Chat, 'id'> = {
         participantIds: [clientId, providerId],
         participantInfo: {
-          [clientId]: { name: clientName, avatarUrl: clientAvatar },
+          [clientId]: { name: clientProfile.name, avatarUrl: clientProfile.avatarUrl },
           [providerId]: { name: provider.name, avatarUrl: provider.avatarUrl },
         },
         updatedAt: Date.now(),
