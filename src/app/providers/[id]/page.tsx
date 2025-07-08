@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -24,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { startChat } from '@/lib/chat-actions';
 import { updateProviderStatus } from '@/lib/provider-actions';
+import { PlanIcon } from '@/components/plan-icon';
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
@@ -184,6 +186,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                 </Avatar>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold">{providerData.name}</h1>
+                  <PlanIcon plan={providerData.plan} className="w-6 h-6" />
                   {providerData.isVerified && (
                     <Tooltip>
                       <TooltipTrigger>

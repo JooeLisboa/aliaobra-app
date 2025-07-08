@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/star-rating';
 import { MapPin, Briefcase, ShieldCheck } from 'lucide-react';
 import type { Provider } from '@/lib/types';
+import { PlanIcon } from './plan-icon';
 
 interface ProviderCardProps {
   provider: Provider;
@@ -36,7 +38,10 @@ export function ProviderCard({ provider }: ProviderCardProps) {
           </div>
         </CardHeader>
         <CardContent className="pt-10 flex-grow">
-          <CardTitle className="text-lg font-semibold hover:text-primary">{provider.name}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold hover:text-primary">{provider.name}</CardTitle>
+            <PlanIcon plan={provider.plan} />
+          </div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <Badge variant="secondary">{provider.category}</Badge>
             {provider.type === 'agency' && (

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense } from 'react';
@@ -104,6 +105,8 @@ function CheckoutContent() {
             const result = await updateUserPlan({
                 userId: user.uid,
                 planId: selectedPlan.id,
+                userName: user.displayName || user.email || "Novo Usuário",
+                userEmail: user.email!,
             });
 
             if (result.success) {
@@ -159,12 +162,12 @@ function CheckoutContent() {
             <CardFooter className="flex justify-between">
                 <Button variant="outline" asChild>
                     <Link href="/plans">
-                        <ArrowLeft className="mr-2" />
+                        <ArrowLeft className="mr-2 h-4 w-4" />
                         Voltar
                     </Link>
                 </Button>
                 <Button onClick={handleConfirmSubscription} disabled={isPending}>
-                    {isPending ? <LoaderCircle className="animate-spin" /> : <CreditCard />}
+                    {isPending ? <LoaderCircle className="animate-spin mr-2 h-4 w-4" /> : <CreditCard className="mr-2 h-4 w-4" />}
                     {isPending ? 'Processando...' : 'Confirmar Assinatura'}
                 </Button>
             </CardFooter>
