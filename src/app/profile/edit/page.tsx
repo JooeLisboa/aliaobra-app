@@ -10,7 +10,7 @@ import * as z from 'zod';
 
 import { useUser } from '@/hooks/use-user';
 import { getProvider } from '@/lib/data';
-import { updateUserProfile } from '@/lib/profile-actions';
+import { updateProfileDetails, updateProfilePortfolio } from '@/lib/profile-actions';
 import type { Provider, PortfolioItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -58,7 +58,9 @@ export default function EditProfilePage() {
   const { toast } = useToast();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isUpdating, startUpdateTransition] = useTransition();
+  
+  const [isUpdatingProfile, startProfileUpdate] = useTransition();
+  const [isUpdatingPortfolio, startPortfolioUpdate] = useTransition();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -159,31 +161,50 @@ export default function EditProfilePage() {
     setNewPortfolioItems(prev => prev.filter(item => item.id !== id));
   };
   
-  const onSubmit = (data: ProfileFormValues) => {
+  const handleSaveProfile = async () => {
     if (!provider || !user) return;
-    
-    const totalPortfolio = fields.length + newPortfolioItems.length;
-    if (totalPortfolio < 2) {
-      toast({ variant: 'destructive', title: 'Portfólio incompleto', description: 'Você precisa ter no mínimo 2 itens no seu portfólio.' });
-      return;
-    }
+    const result = await form.trigger(["name", "category", "location", "bio", "skills"]);
+    if (!result) return;
 
-    startUpdateTransition(async () => {
+    startProfileUpdate(async () => {
+      const data = form.getValues();
       const formData = new FormData();
       
-      // Securely add the user ID
       formData.append('userId', user.uid);
-      
       formData.append('name', data.name);
       formData.append('category', data.category);
       formData.append('location', data.location);
       formData.append('bio', data.bio);
       formData.append('skills', data.skills ?? '');
-      formData.append('existingPortfolio', JSON.stringify(data.portfolio));
 
       if (avatarFile) {
         formData.append('avatar', avatarFile);
       }
+
+      const result = await updateProfileDetails(formData);
+
+      if (result.success) {
+        toast({ title: 'Informações Atualizadas!', description: 'Suas informações básicas foram salvas com sucesso.' });
+        router.refresh();
+      } else {
+        toast({ variant: 'destructive', title: 'Erro ao Atualizar', description: result.error });
+      }
+    });
+  };
+
+  const handleSavePortfolio = async () => {
+    if (!provider || !user) return;
+
+    const totalPortfolio = fields.length + newPortfolioItems.length;
+    if (totalPortfolio < 2) {
+      toast({ variant: 'destructive', title: 'Portfólio incompleto', description: 'Você precisa ter no mínimo 2 itens no seu portfólio.' });
+      return;
+    }
+    
+    startPortfolioUpdate(async () => {
+      const formData = new FormData();
+      formData.append('userId', user.uid);
+      formData.append('existingPortfolio', JSON.stringify(form.getValues('portfolio')));
 
       newPortfolioItems.forEach((item, index) => {
         formData.append(`new_portfolio_image_${index}`, item.file);
@@ -191,11 +212,12 @@ export default function EditProfilePage() {
         formData.append(`new_portfolio_hint_${index}`, item['data-ai-hint']);
       });
 
-      const result = await updateUserProfile(formData);
+      const result = await updateProfilePortfolio(formData);
 
       if (result.success) {
-        toast({ title: 'Perfil Atualizado!', description: 'Suas informações foram salvas com sucesso.' });
-        router.push(`/providers/${provider.id}`);
+        toast({ title: 'Portfólio Atualizado!', description: 'Seu portfólio foi salvo com sucesso.' });
+        setNewPortfolioItems([]);
+        router.refresh();
       } else {
         toast({ variant: 'destructive', title: 'Erro ao Atualizar', description: result.error });
       }
@@ -223,7 +245,6 @@ export default function EditProfilePage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-3xl">Editar Perfil</CardTitle>
@@ -232,7 +253,13 @@ export default function EditProfilePage() {
             <CardContent className="space-y-8">
               
               <section>
-                <h3 className="text-xl font-semibold mb-4 border-b pb-2">Informações Básicas</h3>
+                <div className="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 className="text-xl font-semibold">Informações Básicas</h3>
+                    <Button type="button" size="sm" onClick={handleSaveProfile} disabled={isUpdatingProfile}>
+                      {isUpdatingProfile ? <LoaderCircle className="animate-spin mr-2" /> : <Save className="mr-2" />}
+                      {isUpdatingProfile ? 'Salvando...' : 'Salvar Informações'}
+                    </Button>
+                </div>
                 <div className="space-y-4">
                   <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem><FormLabel>Nome Completo / Nome da Agência</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -272,7 +299,13 @@ export default function EditProfilePage() {
               <Separator />
 
               <section>
-                <h3 className="text-xl font-semibold mb-4 border-b pb-2">Portfólio de Serviços</h3>
+                 <div className="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 className="text-xl font-semibold">Portfólio de Serviços</h3>
+                    <Button type="button" size="sm" onClick={handleSavePortfolio} disabled={isUpdatingPortfolio}>
+                      {isUpdatingPortfolio ? <LoaderCircle className="animate-spin mr-2" /> : <Save className="mr-2" />}
+                      {isUpdatingPortfolio ? 'Salvando...' : 'Salvar Portfólio'}
+                    </Button>
+                 </div>
                  <p className="text-sm text-muted-foreground mb-4">Mostre seus melhores trabalhos. O portfólio deve ter no mínimo 2 itens.</p>
                 <div className="space-y-6">
                   {fields.map((item, index) => (
@@ -299,7 +332,6 @@ export default function EditProfilePage() {
                               <Input 
                                 id="new-portfolio-desc"
                                 placeholder="Ex: Reforma de cozinha"
-                                required
                                 value={newPortfolioDesc}
                                 onChange={(e) => setNewPortfolioDesc(e.target.value)}
                               />
@@ -309,7 +341,6 @@ export default function EditProfilePage() {
                               <Input
                                 id="new-portfolio-hint"
                                 placeholder="Ex: kitchen renovation"
-                                required
                                 value={newPortfolioHint}
                                 onChange={(e) => setNewPortfolioHint(e.target.value)}
                               />
@@ -322,7 +353,6 @@ export default function EditProfilePage() {
                             ref={newPortfolioFileRef}
                             type="file"
                             accept={ACCEPTED_IMAGE_TYPES.join(',')}
-                            required
                             onChange={(e) => setNewPortfolioFile(e.target.files?.[0] || null)}
                           />
                           <FormDescription>Tamanho máximo: {MAX_FILE_SIZE_MB}MB.</FormDescription>
@@ -333,15 +363,8 @@ export default function EditProfilePage() {
                 </div>
               </section>
 
-              <div className="flex justify-end pt-4">
-                <Button type="submit" size="lg" disabled={isUpdating}>
-                  {isUpdating ? <LoaderCircle className="animate-spin mr-2" /> : <Save className="mr-2" />}
-                  {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
-              </div>
             </CardContent>
           </Card>
-        </form>
       </Form>
     </div>
   );
