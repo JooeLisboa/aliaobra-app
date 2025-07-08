@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Info, LoaderCircle } from 'lucide-react';
+import { Check, Info, LoaderCircle, PackageSearch } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -105,6 +105,7 @@ export default function PlansPage() {
   };
 
   const isLoading = isUserLoading || isLoadingProducts;
+  const displayableProducts = products.filter(p => p.prices.some(price => price.type === 'recurring'));
 
   return (
     <TooltipProvider>
@@ -135,11 +136,11 @@ export default function PlansPage() {
              Array.from({ length: 3 }).map((_, i) => (
                 <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
              ))
-          ) : (
-            products.map((product) => {
+          ) : displayableProducts.length > 0 ? (
+            displayableProducts.map((product) => {
               const buttonState = getButtonState(product);
-              const price = product.prices.find(p => p.type === 'recurring');
-              if (!price) return null;
+              // We already filtered for recurring prices, so this find will always succeed.
+              const price = product.prices.find(p => p.type === 'recurring')!;
 
               return (
                 <Card key={product.id} className={`flex flex-col ${product.metadata?.isFeatured ? 'border-primary shadow-lg' : ''}`}>
@@ -178,6 +179,25 @@ export default function PlansPage() {
                 </Card>
               )
             })
+          ) : (
+            <div className="md:col-span-3">
+                <Card className="text-center py-12 px-6">
+                    <CardHeader>
+                        <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                        <CardTitle className="text-2xl">Nenhum Plano Encontrado</CardTitle>
+                        <CardDescription>
+                            Para testar o checkout, por favor, siga os passos abaixo.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-left space-y-3 max-w-md mx-auto">
+                        <p>1. Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel do Stripe</a>.</p>
+                        <p>2. Crie um novo produto (ex: "Plano Profissional").</p>
+                        <p>3. Adicione um preço a este produto, garantindo que o tipo seja <strong>Recorrente</strong>.</p>
+                        <p>4. Certifique-se de que tanto o produto quanto o preço estão marcados como <strong>"Ativo"</strong>.</p>
+                        <p>5. Após salvar, aguarde alguns instantes e recarregue esta página. A extensão do Stripe irá sincronizar os dados com o Firestore.</p>
+                    </CardContent>
+                </Card>
+            </div>
           )}
         </div>
       </div>
