@@ -86,9 +86,9 @@ export default function Home() {
 
       <div id="about" className="py-12 md:py-20 bg-secondary">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a ServiçoPro</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a AliaObra</h2>
               <p className="mt-6 max-w-3xl mx-auto text-lg leading-8 text-secondary-foreground">
-                  Nossa missão é conectar você aos melhores profissionais da construção civil. Na ServiçoPro, acreditamos que encontrar um prestador de serviço confiável e qualificado deve ser um processo simples e transparente. Facilitamos a busca, a avaliação e a contratação, garantindo segurança e qualidade para sua obra ou reforma.
+                  Nossa missão é conectar você aos melhores profissionais da construção civil. Na AliaObra, acreditamos que encontrar um prestador de serviço confiável e qualificado deve ser um processo simples e transparente. Facilitamos a busca, a avaliação e a contratação, garantindo segurança e qualidade para sua obra ou reforma.
               </p>
           </div>
       </div>

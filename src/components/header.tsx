@@ -12,7 +12,7 @@ const AppLogo = () => (
   <Link href="/" className="flex items-center gap-2" prefetch={false}>
     <Wrench className="h-7 w-7 text-primary" />
     <span className="text-xl font-bold text-primary tracking-tighter">
-      ServiçoPro
+      AliaObra
     </span>
   </Link>
 );

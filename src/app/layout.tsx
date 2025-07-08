@@ -4,8 +4,8 @@ import { Header } from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'ServiçoPro',
-  description: 'Encontre os melhores prestadores de serviço para sua obra.',
+  title: 'AliaObra',
+  description: 'AliaObra: Encontre os melhores prestadores de serviço para sua obra.',
 };
 
 export default function RootLayout({
