@@ -73,7 +73,7 @@ export default function EditProfilePage() {
     defaultValues: { name: '', category: '', location: '', bio: '', skills: '', portfolio: [] },
   });
 
-  const { fields, remove, B, C } = useFieldArray({
+  const { fields, remove } = useFieldArray({
     control: form.control,
     name: "portfolio",
   });
