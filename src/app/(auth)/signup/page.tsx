@@ -89,7 +89,7 @@ export default function SignupPage() {
       if (error.code === 'auth/api-key-not-valid') {
         errorMessage = "A chave de API do Firebase é inválida. Verifique suas credenciais no arquivo .env e as configurações do seu projeto no console do Firebase.";
       } else if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "Este email já está em uso por outra conta.";
+        errorMessage = "Este email já está em uso. Tente fazer login ou use um email diferente.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -231,5 +231,5 @@ export default function SignupPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
