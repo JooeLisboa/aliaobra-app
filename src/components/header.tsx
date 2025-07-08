@@ -4,6 +4,7 @@ import Link from "next/link";
 import { 
   Sidebar, 
   SidebarContent, 
+  SidebarFooter,
   SidebarHeader, 
   SidebarMenu, 
   SidebarMenuItem, 
@@ -13,6 +14,7 @@ import {
 import { Wrench, Home, ClipboardList, Info, MessageSquare } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
+import { AuthStatus } from "./auth-status";
 
 
 const AppLogo = ({ className }: { className?: string }) => (
@@ -63,6 +65,9 @@ export function MainSidebar() {
             )}
           </SidebarMenu>
         </SidebarContent>
+        <SidebarFooter className="mt-auto border-t p-2">
+          <AuthStatus />
+        </SidebarFooter>
       </Sidebar>
   );
 }

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, UserCircle, LayoutDashboard } from 'lucide-react';
+import { LogOut, UserCircle, LayoutDashboard, UserPlus, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Provider } from '@/lib/types';
 
@@ -41,7 +41,14 @@ export function AuthStatus() {
   };
 
   if (isLoading) {
-    return <Skeleton className="h-10 w-10 rounded-full" />;
+    return (
+        <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-full" />
+            <div className="flex flex-col gap-2 w-full group-data-[collapsible=icon]:hidden">
+                <Skeleton className="h-4 w-20" />
+            </div>
+        </div>
+    );
   }
 
   if (user) {
@@ -58,16 +65,19 @@ export function AuthStatus() {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={avatarUrl} alt={displayName ?? 'User'} />
-              <AvatarFallback>
-                {fallback}
-              </AvatarFallback>
-            </Avatar>
+          <Button variant="ghost" className="w-full justify-start h-auto p-1">
+              <div className="flex items-center gap-3 w-full">
+                  <Avatar className="h-8 w-8">
+                      <AvatarImage src={avatarUrl} alt={displayName ?? 'User'} />
+                      <AvatarFallback>{fallback}</AvatarFallback>
+                  </Avatar>
+                  <div className="truncate text-left group-data-[collapsible=icon]:hidden">
+                      <p className="text-sm font-semibold leading-none truncate">{displayName}</p>
+                  </div>
+              </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuContent className="w-56" align="start" side="top" sideOffset={12}>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{displayName}</p>
@@ -94,15 +104,17 @@ export function AuthStatus() {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="ghost" asChild>
-        <Link href="/login" prefetch={false}>
-          Entrar
-        </Link>
-      </Button>
+    <div className="flex flex-col gap-2">
       <Button asChild>
         <Link href="/signup" prefetch={false}>
-          Cadastre-se
+          <UserPlus />
+          <span className="group-data-[collapsible=icon]:hidden">Cadastre-se</span>
+        </Link>
+      </Button>
+      <Button variant="secondary" asChild>
+        <Link href="/login" prefetch={false}>
+          <LogIn />
+          <span className="group-data-[collapsible=icon]:hidden">Entrar</span>
         </Link>
       </Button>
     </div>

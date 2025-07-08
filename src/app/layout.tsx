@@ -5,7 +5,6 @@ import { MainSidebar } from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
 import { Footer } from '@/components/footer';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AuthStatus } from '@/components/auth-status';
 
 export const metadata: Metadata = {
   title: 'AliaObra',
@@ -18,9 +17,6 @@ const ContentHeader = () => {
              <div className="md:hidden">
                 <SidebarTrigger />
              </div>
-            <div className="relative ml-auto flex-1 md:grow-0">
-                <AuthStatus />
-            </div>
         </header>
     );
 };
