@@ -1,37 +1,38 @@
 'use server';
 
-import { doc, runTransaction, arrayUnion } from 'firebase/firestore';
+import { doc, runTransaction, arrayUnion, collection } from 'firebase/firestore';
 import { db, areCredsAvailable } from '@/lib/firebase';
 import type { Review, Provider } from '@/lib/types';
-import * as z from 'zod';
+import { z } from 'zod';
 
+// This schema now gets flat author details, making it more secure
 const reviewSchema = z.object({
-  providerId: z.string().min(1, { message: 'ID do provedor é obrigatório.' }),
+  providerId: z.string().min(1),
   rating: z.number().min(1).max(5),
   comment: z.string().min(10, { message: 'Comentário precisa ter no mínimo 10 caracteres.' }),
   imageUrl: z.string().url().nullable().optional(),
-  author: z.object({
-      id: z.string(),
-      name: z.string(),
-      avatarUrl: z.string().url(),
-  })
+  authorId: z.string().min(1),
+  authorName: z.string().min(1),
+  authorAvatarUrl: z.string().url(),
 });
 
 export async function addReview(data: unknown) {
     if (!areCredsAvailable || !db) {
-        return { success: false, error: 'A configuração do Firebase está incompleta. Contate o suporte.' };
+        return { success: false, error: 'A configuração do Firebase está incompleta.' };
     }
     
     const validation = reviewSchema.safeParse(data);
     if (!validation.success) {
-        return { success: false, error: 'Dados da avaliação são inválidos: ' + validation.error.flatten().fieldErrors };
+        const errorDetails = validation.error.flatten().fieldErrors;
+        console.error("Review validation failed:", errorDetails);
+        return { success: false, error: 'Dados da avaliação são inválidos.' };
     }
 
-    const { providerId, author, rating, comment, imageUrl } = validation.data;
+    const { providerId, rating, comment, imageUrl, authorId, authorName, authorAvatarUrl } = validation.data;
     const providerRef = doc(db, 'providers', providerId);
 
     try {
-        const newReviewId = doc(collection(db, 'temp')).id;
+        const newReviewId = doc(collection(db, 'temp')).id; // Generate a unique ID
 
         await runTransaction(db, async (transaction) => {
             const providerDoc = await transaction.get(providerRef);
@@ -41,9 +42,14 @@ export async function addReview(data: unknown) {
 
             const provider = providerDoc.data() as Provider;
             
+            // Construct the review object securely inside the server action
             const newReview: Review = {
                 id: newReviewId,
-                author,
+                author: {
+                    id: authorId,
+                    name: authorName,
+                    avatarUrl: authorAvatarUrl,
+                },
                 rating,
                 comment,
                 date: new Date().toLocaleDateString('pt-BR'),
@@ -51,7 +57,7 @@ export async function addReview(data: unknown) {
             };
 
             const currentReviews = provider.reviews || [];
-            if(currentReviews.some(r => r.author.id === author.id)) {
+            if(currentReviews.some(r => r.author.id === authorId)) {
                 // For this prototype, we'll prevent multiple reviews.
                 // A real app might allow editing the existing review.
                 throw new Error("Você já avaliou este profissional.");

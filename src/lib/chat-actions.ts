@@ -25,13 +25,13 @@ const startChatSchema = z.object({
   clientId: z.string(),
   clientName: z.string(),
   clientAvatar: z.string().url(),
-  initialMessage: z.string().min(1, "A mensagem não pode estar vazia."),
+  initialMessage: z.string().min(1, "A mensagem não pode estar vazia.").max(500, "A mensagem é muito longa."),
 });
 
 const sendMessageSchema = z.object({
   chatId: z.string(),
   senderId: z.string(),
-  messageText: z.string().min(1, "A mensagem não pode estar vazia."),
+  messageText: z.string().min(1, "A mensagem não pode estar vazia.").max(500, "A mensagem é muito longa."),
 });
 
 function getChatId(uid1: string, uid2: string) {
@@ -43,14 +43,7 @@ export async function startChat(formData: FormData) {
     return { success: false, error: 'O serviço de banco de dados não está disponível.' };
   }
 
-  const rawData = {
-    providerId: formData.get('providerId'),
-    clientId: formData.get('clientId'),
-    clientName: formData.get('clientName'),
-    clientAvatar: formData.get('clientAvatar'),
-    initialMessage: formData.get('initialMessage'),
-  };
-
+  const rawData = Object.fromEntries(formData.entries());
   const validation = startChatSchema.safeParse(rawData);
 
   if (!validation.success) {
@@ -58,6 +51,11 @@ export async function startChat(formData: FormData) {
   }
 
   const { providerId, clientId, clientName, clientAvatar, initialMessage } = validation.data;
+  
+  if (providerId === clientId) {
+    return { success: false, error: 'Você não pode iniciar uma conversa consigo mesmo.' };
+  }
+
   const chatId = getChatId(clientId, providerId);
   const chatRef = doc(db, 'chats', chatId);
 
@@ -109,11 +107,7 @@ export async function sendMessageInChat(formData: FormData) {
     return { success: false, error: 'O serviço de banco de dados não está disponível.' };
   }
 
-  const validation = sendMessageSchema.safeParse({
-    chatId: formData.get('chatId'),
-    senderId: formData.get('senderId'),
-    messageText: formData.get('messageText'),
-  });
+  const validation = sendMessageSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validation.success) {
     return { success: false, error: 'Dados da mensagem são inválidos.' };
@@ -121,10 +115,16 @@ export async function sendMessageInChat(formData: FormData) {
   
   const { chatId, senderId, messageText } = validation.data;
   const chatRef = doc(db, 'chats', chatId);
-  const messagesCollectionRef = collection(chatRef, 'messages');
-
+  
   try {
+    // Security Check: Ensure the sender is a participant of the chat
+    const chatDoc = await getDoc(chatRef);
+    if (!chatDoc.exists() || !chatDoc.data().participantIds?.includes(senderId)) {
+        return { success: false, error: 'Acesso negado. Você não faz parte desta conversa.' };
+    }
+
     const batch = writeBatch(db);
+    const messagesCollectionRef = collection(chatRef, 'messages');
 
     const newMessage = {
       senderId: senderId,

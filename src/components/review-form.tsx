@@ -21,10 +21,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { StarRating } from '@/components/star-rating';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Video, FileUp, LoaderCircle } from 'lucide-react';
+import { Send, Video, FileUp, LoaderCircle, Camera } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { auth } from '@/lib/firebase';
-import { type User, onAuthStateChanged } from 'firebase/auth';
+import { useUser } from '@/hooks/use-user';
 import { addReview } from '@/lib/review-actions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -52,15 +51,7 @@ export function ReviewForm({ providerId }: { providerId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    if (!auth) return;
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
+  const { user } = useUser();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -142,11 +133,10 @@ export function ReviewForm({ providerId }: { providerId: string }) {
         rating: values.rating,
         comment: values.comment,
         imageUrl: capturedImage,
-        author: {
-          id: user.uid,
-          name: user.displayName || user.email || "Usuário Anônimo",
-          avatarUrl: user.photoURL || `https://placehold.co/100x100.png`
-        }
+        // Pass author details securely
+        authorId: user.uid,
+        authorName: user.displayName || user.email || "Usuário Anônimo",
+        authorAvatarUrl: user.photoURL || `https://placehold.co/100x100.png`
       });
       if (result.success) {
         toast({ title: "Avaliação Enviada!", description: "Obrigado por seu feedback. A página será atualizada." });
@@ -244,14 +234,14 @@ export function ReviewForm({ providerId }: { providerId: string }) {
                     <FormLabel>Anexar Foto</FormLabel>
                     <div className="flex gap-2 items-center">
                         <Button type="button" variant="outline" onClick={() => document.getElementById('file-input')?.click()} disabled={isPending}>
-                            <FileUp className="mr-2" />
+                            <FileUp className="mr-2 h-4 w-4" />
                             Do Arquivo
                         </Button>
                         <Input id="file-input" type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={isPending} />
 
                         <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
                             <DialogTrigger asChild>
-                                <Button type="button" variant="outline" disabled={isPending}><Video className="mr-2" /> Da Câmera</Button>
+                                <Button type="button" variant="outline" disabled={isPending}><Video className="mr-2 h-4 w-4" /> Da Câmera</Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-md">
                                 <DialogHeader>
@@ -276,7 +266,7 @@ export function ReviewForm({ providerId }: { providerId: string }) {
                                     <DialogClose asChild>
                                         <Button type="button" variant="secondary">Cancelar</Button>
                                     </DialogClose>
-                                    <Button type="button" onClick={handleCapturePhoto} disabled={!hasCameraPermission}>Capturar Foto</Button>
+                                    <Button type="button" onClick={handleCapturePhoto} disabled={!hasCameraPermission}><Camera className="mr-2 h-4 w-4" />Capturar Foto</Button>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
@@ -299,8 +289,8 @@ export function ReviewForm({ providerId }: { providerId: string }) {
               
               <DialogFooter>
                 <Button type="submit" disabled={isPending}>
-                  {isPending && <LoaderCircle className="mr-2 animate-spin" />}
-                  <Send className='mr-2' /> 
+                  {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                  <Send className='mr-2 h-4 w-4' /> 
                   {isPending ? 'Enviando...' : 'Enviar Avaliação'}
                 </Button>
               </DialogFooter>

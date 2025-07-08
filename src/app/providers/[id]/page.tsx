@@ -66,36 +66,21 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     }
   }, [providerData]);
 
-  const handleAcceptService = async () => {
-    if (!providerData) return;
+  const handleUpdateStatus = (newStatus: 'Disponível' | 'Em Serviço') => {
+    if (!providerData || !user || user.uid !== providerData.id) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Você não tem permissão para alterar este status.' });
+        return;
+    }
     startStatusUpdate(async () => {
       const result = await updateProviderStatus({
-        providerId: providerData.id,
-        status: 'Em Serviço',
-        serviceAcceptedAt: Date.now(),
+        providerId: user.uid,
+        status: newStatus,
+        serviceAcceptedAt: newStatus === 'Em Serviço' ? Date.now() : undefined,
       });
 
       if (result.success) {
-        setProviderData((prev) => (prev ? { ...prev, status: 'Em Serviço', serviceAcceptedAt: Date.now() } : null));
-        toast({ title: 'Serviço iniciado!', description: 'O status do profissional foi atualizado.' });
-      } else {
-        toast({ variant: 'destructive', title: 'Erro', description: result.error });
-      }
-    });
-  };
-
-  const handleFinishService = async () => {
-    if (!providerData) return;
-    startStatusUpdate(async () => {
-      const result = await updateProviderStatus({
-        providerId: providerData.id,
-        status: 'Disponível',
-        serviceAcceptedAt: undefined,
-      });
-
-      if (result.success) {
-        setProviderData((prev) => (prev ? { ...prev, status: 'Disponível', serviceAcceptedAt: undefined } : null));
-        toast({ title: 'Serviço finalizado!', description: 'O profissional está disponível novamente.' });
+        setProviderData((prev) => (prev ? { ...prev, status: newStatus, serviceAcceptedAt: newStatus === 'Em Serviço' ? Date.now() : undefined } : null));
+        toast({ title: `Serviço ${newStatus === 'Em Serviço' ? 'iniciado' : 'finalizado'}!`, description: 'O status do profissional foi atualizado.' });
       } else {
         toast({ variant: 'destructive', title: 'Erro', description: result.error });
       }
@@ -112,6 +97,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
 
     setIsSendingMessage(true);
     formData.append('providerId', providerData.id);
+    // Securely add client info
     formData.append('clientId', user.uid);
     formData.append('clientName', user.displayName || user.email || 'Cliente');
     formData.append('clientAvatar', user.photoURL || `https://placehold.co/100x100.png`);
@@ -159,7 +145,8 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
       </div>
     );
   }
-
+  
+  const isOwner = user && user.uid === providerData.id;
   const isAgency = providerData.type === 'agency';
 
   const agencyPortfolio: PortfolioItem[] = isAgency
@@ -179,7 +166,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   };
   
   const sendMessageTrigger = (
-      <Button variant="secondary" className="w-full" size="lg" disabled={!user}>
+      <Button variant="secondary" className="w-full" size="lg" disabled={!user || isOwner}>
         <MessageSquare className="mr-2"/> Enviar mensagem
       </Button>
   );
@@ -234,10 +221,10 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                       }
                   </div>
                 
-                {!isAgency && (
+                {isOwner && !isAgency && (
                     <div className="w-full mb-4 flex flex-col gap-2">
                       {providerData.status === 'Disponível' ? (
-                        <Button onClick={handleAcceptService} className="w-full" size="lg" disabled={isUpdatingStatus}>
+                        <Button onClick={() => handleUpdateStatus('Em Serviço')} className="w-full" size="lg" disabled={isUpdatingStatus}>
                           {isUpdatingStatus && <LoaderCircle className="animate-spin" />}
                           {isUpdatingStatus ? 'Atualizando...' : 'Aceitar Serviço'}
                         </Button>
@@ -245,7 +232,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                         <Tooltip delayDuration={100}>
                           <TooltipTrigger asChild>
                             <div className="w-full">
-                              <Button onClick={handleFinishService} disabled={!canFinishService || isUpdatingStatus} className="w-full" size="lg">
+                              <Button onClick={() => handleUpdateStatus('Disponível')} disabled={!canFinishService || isUpdatingStatus} className="w-full" size="lg">
                                 {isUpdatingStatus && <LoaderCircle className="animate-spin" />}
                                 {isUpdatingStatus ? 'Finalizando...' : 'Finalizar Serviço'}
                               </Button>
@@ -265,7 +252,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                     <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar</Button>
                     <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
                       <DialogTrigger asChild>
-                          {user ? (
+                          {user && !isOwner ? (
                             sendMessageTrigger
                           ) : (
                             <Tooltip>
@@ -273,7 +260,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                                   <span tabIndex={0}>{sendMessageTrigger}</span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Faça login para enviar uma mensagem.</p>
+                                <p>{isOwner ? "Você não pode enviar uma mensagem para si mesmo." : "Faça login para enviar uma mensagem."}</p>
                               </TooltipContent>
                             </Tooltip>
                           )}
@@ -351,19 +338,36 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                     {agencyPortfolio.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {agencyPortfolio.map((item) => (
-                          <div key={item.id} className="group relative">
-                            <Image
-                              src={item.imageUrl}
-                              alt={item.description}
-                              width={400}
-                              height={300}
-                              className="rounded-lg object-cover aspect-square"
-                              data-ai-hint={item['data-ai-hint']}
-                            />
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                {item.description}
-                            </div>
-                          </div>
+                          <Dialog key={item.id}>
+                            <DialogTrigger asChild>
+                              <div className="group relative cursor-pointer">
+                                <Image
+                                  src={item.imageUrl}
+                                  alt={item.description}
+                                  width={400}
+                                  height={300}
+                                  className="rounded-lg object-cover aspect-square transition-transform group-hover:scale-105"
+                                  data-ai-hint={item['data-ai-hint']}
+                                />
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <p className="text-white text-center p-2">{item.description}</p>
+                                </div>
+                              </div>
+                            </DialogTrigger>
+                             <DialogContent className="max-w-3xl">
+                                <Image
+                                    src={item.imageUrl}
+                                    alt={item.description}
+                                    width={800}
+                                    height={600}
+                                    className="rounded-lg object-contain"
+                                    data-ai-hint={item['data-ai-hint']}
+                                />
+                                 <DialogHeader>
+                                    <DialogTitle>{item.description}</DialogTitle>
+                                 </DialogHeader>
+                             </DialogContent>
+                          </Dialog>
                         ))}
                       </div>
                     ) : (
@@ -380,13 +384,13 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   <CardContent className="space-y-6">
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Biografia</h3>
-                      <p className="text-muted-foreground">{providerData.bio}</p>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{providerData.bio}</p>
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Especialidades</h3>
                       <div className="flex flex-wrap gap-2">
                         {providerData.skills.map((skill) => (
-                          <Badge key={skill} variant="outline">{skill}</Badge>
+                          <Badge key={skill} variant="secondary">{skill}</Badge>
                         ))}
                       </div>
                     </div>

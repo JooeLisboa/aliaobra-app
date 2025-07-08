@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getProviders } from '@/lib/data';
 import { ProviderCard } from '@/components/provider-card';
-import { Search, LoaderCircle } from 'lucide-react';
+import { Search, LoaderCircle, Building, Users, Star } from 'lucide-react';
 import type { Provider } from '@/lib/types';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function Home() {
   const [allProviders, setAllProviders] = useState<Provider[]>([]);
@@ -26,7 +28,6 @@ export default function Home() {
 
   const categories = useMemo(() => {
     const allCategories = allProviders.map(p => p.category);
-    // Use 'new Set' to get unique categories and add 'all' at the beginning
     return ['all', ...Array.from(new Set(allCategories))];
   }, [allProviders]);
 
@@ -41,55 +42,105 @@ export default function Home() {
 
   return (
     <div className="w-full mx-auto">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4 tracking-tight">
-            Encontre o Profissional Certo
-          </h1>
-          <p className="text-lg md:text-xl text-foreground/80 max-w-3xl mx-auto">
-            Busque por pedreiros, pintores, eletricistas e mais. Veja avaliações e portfólios para contratar com segurança.
-          </p>
-        </div>
-
-        <div className="bg-card p-4 sm:p-6 rounded-lg shadow-md mb-12 max-w-4xl mx-auto">
-          <div className="grid sm:grid-cols-2 gap-4 items-end">
-            <div>
-              <label htmlFor="service-category" className="text-sm font-medium text-foreground/90 mb-1 block">
-                Serviço
-              </label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
-                <SelectTrigger id="service-category" className="w-full">
-                  <SelectValue placeholder="Selecione a categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category === 'all' ? 'Todas as categorias' : category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary">
+        <div className="container px-4 md:px-6">
+          <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
+            <div className="space-y-4">
+              <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-medium">
+                Conectando Talentos à sua Obra
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tighter">
+                Encontre o Profissional Certo para seu Projeto
+              </h1>
+              <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                Busque por pedreiros, pintores, eletricistas e mais. Veja avaliações e portfólios para contratar com segurança.
+              </p>
             </div>
-            <div>
-              <label htmlFor="location" className="text-sm font-medium text-foreground/90 mb-1 block">Localização</label>
-              <Input 
-                id="location" 
-                placeholder="Digite a cidade ou estado" 
-                value={locationSearch}
-                onChange={(e) => setLocationSearch(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
+             <Image
+              src="https://placehold.co/600x400.png"
+              width="600"
+              height="400"
+              alt="Hero Image"
+              className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full"
+              data-ai-hint="construction workers team"
+            />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div id="about" className="py-12 md:py-20 bg-secondary">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a AliaObra</h2>
-              <p className="mt-6 max-w-3xl mx-auto text-lg leading-8 text-secondary-foreground">
-                  Nossa missão é conectar você aos melhores profissionais da construção civil. Na AliaObra, acreditamos que encontrar um prestador de serviço confiável e qualificado deve ser um processo simples e transparente. Facilitamos a busca, a avaliação e a contratação, garantindo segurança e qualidade para sua obra ou reforma.
-              </p>
+      <section className="w-full py-12 md:py-20">
+         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Card className="p-4 sm:p-6 rounded-lg shadow-lg -mt-32 mb-12 max-w-4xl mx-auto bg-card">
+              <div className="grid sm:grid-cols-2 gap-4 items-end">
+                <div>
+                  <label htmlFor="service-category" className="text-sm font-medium text-foreground/90 mb-1 block">
+                    Serviço
+                  </label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
+                    <SelectTrigger id="service-category" className="w-full">
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category === 'all' ? 'Todas as categorias' : category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label htmlFor="location" className="text-sm font-medium text-foreground/90 mb-1 block">Localização</label>
+                  <Input 
+                    id="location" 
+                    placeholder="Digite a cidade ou estado" 
+                    value={locationSearch}
+                    onChange={(e) => setLocationSearch(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            </Card>
+         </div>
+      </section>
+      
+      <div id="about" className="py-12 md:py-20 bg-background">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a AliaObra</h2>
+                  <p className="mt-4 max-w-3xl mx-auto text-lg leading-8 text-muted-foreground">
+                      Nossa missão é conectar você aos melhores profissionais da construção civil de forma simples, transparente e segura.
+                  </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                  <Card className="p-6">
+                      <CardHeader className="flex flex-col items-center">
+                          <Building className="w-12 h-12 text-primary mb-4" />
+                          <h3 className="text-xl font-semibold">Para Clientes</h3>
+                      </CardHeader>
+                      <CardContent>
+                          <p className="text-muted-foreground">Encontre profissionais qualificados, veja portfólios reais e leia avaliações de outros clientes para contratar com confiança.</p>
+                      </CardContent>
+                  </Card>
+                   <Card className="p-6">
+                      <CardHeader className="flex flex-col items-center">
+                          <Users className="w-12 h-12 text-primary mb-4" />
+                          <h3 className="text-xl font-semibold">Para Profissionais</h3>
+                      </CardHeader>
+                      <CardContent>
+                          <p className="text-muted-foreground">Crie um perfil, exiba seus melhores trabalhos, receba avaliações e aumente sua visibilidade para conquistar mais clientes.</p>
+                      </CardContent>
+                  </Card>
+                   <Card className="p-6">
+                       <CardHeader className="flex flex-col items-center">
+                          <Star className="w-12 h-12 text-primary mb-4" />
+                          <h3 className="text-xl font-semibold">Qualidade e Segurança</h3>
+                      </CardHeader>
+                      <CardContent>
+                          <p className="text-muted-foreground">Verificamos perfis e usamos um sistema de avaliação robusto para construir uma comunidade de confiança e excelência.</p>
+                      </CardContent>
+                  </Card>
+              </div>
           </div>
       </div>
       

@@ -38,8 +38,8 @@ function ChatMessages({ messages, currentUserId, chatInfo }: { messages: ChatMes
                             <div className="w-8 h-8 shrink-0">
                                 {showAvatar && 
                                     <Avatar className="w-8 h-8">
-                                        <AvatarImage src={otherParticipant.avatarUrl} />
-                                        <AvatarFallback>{otherParticipant.name.charAt(0)}</AvatarFallback>
+                                        <AvatarImage src={otherParticipant?.avatarUrl} />
+                                        <AvatarFallback>{otherParticipant?.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                 }
                             </div>
@@ -118,6 +118,7 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
         setIsSending(true);
         const formData = new FormData();
         formData.append('chatId', params.chatId);
+        // Securely add senderId
         formData.append('senderId', user.uid);
         formData.append('messageText', messageText);
 
@@ -142,6 +143,10 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
 
     const otherParticipantId = chatInfo.participantIds.find(id => id !== user.uid)!;
     const otherParticipant = chatInfo.participantInfo[otherParticipantId];
+    
+    if (!otherParticipant) {
+        return <div className="w-full flex-1 flex items-center justify-center p-4">Não foi possível carregar as informações do outro participante.</div>;
+    }
 
     return (
         <main className="w-full flex flex-1 flex-col h-full bg-background">
@@ -166,7 +171,7 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                     <Input ref={inputRef} placeholder="Digite sua mensagem..." autoComplete="off" disabled={isSending} />
                     <Button type="submit" size="icon" disabled={isSending}>
-                        {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
+                        {isSending ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                 </form>
             </footer>

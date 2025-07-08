@@ -32,8 +32,8 @@ const profileSchema = z.object({
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   category: z.string().min(3, 'A categoria deve ter pelo menos 3 caracteres.'),
   location: z.string().min(2, 'A localização deve ter pelo menos 2 caracteres.'),
-  bio: z.string().min(10, 'A biografia deve ter pelo menos 10 caracteres.'),
-  skills: z.string(),
+  bio: z.string().min(10, 'A biografia deve ter pelo menos 10 caracteres.').max(500, 'A biografia não pode ter mais de 500 caracteres.'),
+  skills: z.string().optional(),
   portfolio: z.array(z.object({
     id: z.string(),
     imageUrl: z.string().url(),
@@ -64,8 +64,6 @@ export default function EditProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [newPortfolioItems, setNewPortfolioItems] = useState<NewPortfolioItem[]>([]);
 
-  const newPortfolioDescRef = useRef<HTMLInputElement>(null);
-  const newPortfolioHintRef = useRef<HTMLInputElement>(null);
   const newPortfolioFileRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProfileFormValues>({
@@ -118,12 +116,14 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleAddPortfolioItem = () => {
-    const file = newPortfolioFileRef.current?.files?.[0];
-    const description = newPortfolioDescRef.current?.value;
-    const hint = newPortfolioHintRef.current?.value;
+  const handleAddPortfolioItem = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const file = formData.get('newPortfolioFile') as File;
+    const description = formData.get('newPortfolioDesc') as string;
+    const hint = formData.get('newPortfolioHint') as string;
 
-    if (!file || !description || !hint) {
+    if (!file || file.size === 0 || !description || !hint) {
       toast({ variant: 'destructive', title: 'Campos obrigatórios', description: 'Preencha a descrição, a dica para IA e selecione uma imagem.' });
       return;
     }
@@ -144,10 +144,7 @@ export default function EditProfilePage() {
       'data-ai-hint': hint,
     };
     setNewPortfolioItems(prev => [...prev, newItem]);
-
-    if (newPortfolioFileRef.current) newPortfolioFileRef.current.value = '';
-    if (newPortfolioDescRef.current) newPortfolioDescRef.current.value = '';
-    if (newPortfolioHintRef.current) newPortfolioHintRef.current.value = '';
+    (e.target as HTMLFormElement).reset();
   };
 
   const removeNewPortfolioItem = (id: string) => {
@@ -155,7 +152,7 @@ export default function EditProfilePage() {
   };
   
   const onSubmit = (data: ProfileFormValues) => {
-    if (!provider) return;
+    if (!provider || !user) return;
     
     const totalPortfolio = fields.length + newPortfolioItems.length;
     if (totalPortfolio < 2) {
@@ -166,11 +163,14 @@ export default function EditProfilePage() {
     startUpdateTransition(async () => {
       const formData = new FormData();
       
+      // Securely add the user ID
+      formData.append('userId', user.uid);
+      
       formData.append('name', data.name);
       formData.append('category', data.category);
       formData.append('location', data.location);
       formData.append('bio', data.bio);
-      formData.append('skills', data.skills);
+      formData.append('skills', data.skills ?? '');
       formData.append('existingPortfolio', JSON.stringify(data.portfolio));
 
       if (avatarFile) {
@@ -183,7 +183,7 @@ export default function EditProfilePage() {
         formData.append(`new_portfolio_hint_${index}`, item['data-ai-hint']);
       });
 
-      const result = await updateUserProfile(provider.id, formData);
+      const result = await updateUserProfile(formData);
 
       if (result.success) {
         toast({ title: 'Perfil Atualizado!', description: 'Suas informações foram salvas com sucesso.' });
@@ -214,14 +214,14 @@ export default function EditProfilePage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl">Editar Perfil</CardTitle>
-          <CardDescription>Atualize suas informações para atrair mais clientes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-3xl">Editar Perfil</CardTitle>
+              <CardDescription>Atualize suas informações para que os clientes possam te encontrar.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
               
               <section>
                 <h3 className="text-xl font-semibold mb-4 border-b pb-2">Informações Básicas</h3>
@@ -234,22 +234,26 @@ export default function EditProfilePage() {
                     <FormLabel>Foto de Perfil</FormLabel>
                     <div className="flex items-center gap-4">
                       {avatarPreview && <Image src={avatarPreview} alt="Avatar preview" width={80} height={80} className="rounded-full object-cover aspect-square" />}
-                      <Button type="button" variant="outline" onClick={() => document.getElementById('avatar-upload')?.click()}>
-                        <Upload className="mr-2" /> Alterar Foto
-                      </Button>
-                      <Input id="avatar-upload" type="file" className="hidden" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleAvatarChange} />
+                      <div className='flex flex-col gap-2'>
+                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('avatar-upload')?.click()}>
+                          <Upload className="mr-2 h-4 w-4" /> Alterar Foto
+                        </Button>
+                        <Input id="avatar-upload" type="file" className="hidden" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleAvatarChange} />
+                         <p className="text-xs text-muted-foreground">Tamanho máx: {MAX_FILE_SIZE_MB}MB. JPG, PNG, WebP.</p>
+                      </div>
                     </div>
-                    <FormDescription>Tamanho máximo: {MAX_FILE_SIZE_MB}MB. Formatos: JPG, PNG, WebP.</FormDescription>
                   </FormItem>
 
-                  <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem><FormLabel>Categoria Principal</FormLabel><FormControl><Input {...field} placeholder="Ex: Eletricista, Pintor" /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="location" render={({ field }) => (
-                    <FormItem><FormLabel>Localização</FormLabel><FormControl><Input {...field} placeholder="Ex: São Paulo, SP" /></FormControl><FormMessage /></FormItem>
-                  )} />
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="category" render={({ field }) => (
+                      <FormItem><FormLabel>Categoria Principal</FormLabel><FormControl><Input {...field} placeholder="Ex: Eletricista, Pintor" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="location" render={({ field }) => (
+                      <FormItem><FormLabel>Localização</FormLabel><FormControl><Input {...field} placeholder="Ex: São Paulo, SP" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
                   <FormField control={form.control} name="bio" render={({ field }) => (
-                    <FormItem><FormLabel>Biografia</FormLabel><FormControl><Textarea {...field} rows={4} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Biografia</FormLabel><FormControl><Textarea {...field} rows={5} placeholder="Fale sobre você, sua experiência e o que você oferece." /></FormControl><FormMessage /></FormItem>
                   )} />
                    <FormField control={form.control} name="skills" render={({ field }) => (
                     <FormItem><FormLabel>Habilidades e Especialidades</FormLabel><FormControl><Textarea {...field} rows={4} placeholder="Instalação de ar condicionado&#10;Reparos elétricos residenciais&#10;Manutenção preventiva" /></FormControl><FormDescription>Liste uma habilidade por linha.</FormDescription><FormMessage /></FormItem>
@@ -261,53 +265,57 @@ export default function EditProfilePage() {
 
               <section>
                 <h3 className="text-xl font-semibold mb-4 border-b pb-2">Portfólio de Serviços</h3>
-                 <p className="text-sm text-muted-foreground mb-4">O portfólio deve ter no mínimo 2 itens.</p>
+                 <p className="text-sm text-muted-foreground mb-4">Mostre seus melhores trabalhos. O portfólio deve ter no mínimo 2 itens.</p>
                 <div className="space-y-6">
                   {fields.map((item, index) => (
-                    <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg bg-secondary/30">
+                    <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg bg-secondary/30 relative">
                       <Image src={item.imageUrl} alt={item.description} width={80} height={80} className="rounded-md object-cover aspect-square" />
                       <div className="flex-1"><p className="font-semibold">{item.description}</p><p className="text-sm text-muted-foreground">Dica de IA: "{item['data-ai-hint']}"</p></div>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2"><Trash2 className="w-4 h-4 text-destructive" /></Button>
                     </div>
                   ))}
                   {newPortfolioItems.map((item) => (
-                     <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg bg-secondary/30">
+                     <div key={item.id} className="flex items-start gap-4 p-4 border rounded-lg bg-secondary/30 relative">
                        <Image src={item.previewUrl} alt={item.description} width={80} height={80} className="rounded-md object-cover aspect-square" />
                        <div className="flex-1"><p className="font-semibold">{item.description}</p><p className="text-sm text-muted-foreground">Dica de IA: "{item['data-ai-hint']}"</p></div>
-                       <Button type="button" variant="ghost" size="icon" onClick={() => removeNewPortfolioItem(item.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                       <Button type="button" variant="ghost" size="icon" onClick={() => removeNewPortfolioItem(item.id)} className="absolute top-2 right-2"><Trash2 className="w-4 h-4 text-destructive" /></Button>
                      </div>
                   ))}
-                  <div className="p-4 border border-dashed rounded-lg space-y-4">
-                      <h4 className="font-semibold">Adicionar Novo Item ao Portfólio</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                         <div className="space-y-2">
-                             <Label htmlFor="new-portfolio-desc">Descrição do trabalho</Label>
-                             <Input id="new-portfolio-desc" ref={newPortfolioDescRef} placeholder="Ex: Reforma de cozinha" />
-                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="new-portfolio-hint">Dica para IA</Label>
-                            <Input id="new-portfolio-hint" ref={newPortfolioHintRef} placeholder="Ex: kitchen renovation" />
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="new-portfolio-file">Imagem do trabalho</Label>
-                        <Input id="new-portfolio-file" ref={newPortfolioFileRef} type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} />
-                        <FormDescription>Tamanho máximo: {MAX_FILE_SIZE_MB}MB.</FormDescription>
-                      </div>
-                      <Button type="button" onClick={handleAddPortfolioItem}><PlusCircle /> Adicionar ao Portfólio</Button>
-                  </div>
+                  
+                  <Card className="p-4 border-dashed">
+                      <form onSubmit={handleAddPortfolioItem} className="space-y-4">
+                        <h4 className="font-semibold">Adicionar Novo Item ao Portfólio</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                              <Label htmlFor="new-portfolio-desc">Descrição do trabalho</Label>
+                              <Input id="new-portfolio-desc" name="newPortfolioDesc" placeholder="Ex: Reforma de cozinha" required />
+                          </div>
+                          <div className="space-y-2">
+                              <Label htmlFor="new-portfolio-hint">Dica para IA (em inglês)</Label>
+                              <Input id="new-portfolio-hint" name="newPortfolioHint" placeholder="Ex: kitchen renovation" required />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="new-portfolio-file">Imagem do trabalho</Label>
+                          <Input id="new-portfolio-file" name="newPortfolioFile" type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} required />
+                          <FormDescription>Tamanho máximo: {MAX_FILE_SIZE_MB}MB.</FormDescription>
+                        </div>
+                        <Button type="submit"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar ao Portfólio</Button>
+                      </form>
+                  </Card>
                 </div>
               </section>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4">
                 <Button type="submit" size="lg" disabled={isUpdating}>
-                  {isUpdating && <LoaderCircle className="animate-spin" />}<Save />{isUpdating ? 'Salvando...' : 'Salvar Alterações'}
+                  {isUpdating ? <LoaderCircle className="animate-spin mr-2" /> : <Save className="mr-2" />}
+                  {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
               </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </form>
+      </Form>
     </div>
   );
 }
