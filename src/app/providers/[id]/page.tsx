@@ -230,7 +230,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                 <Info className="h-4 w-4" />
                 <AlertTitle className="font-semibold">Lembrete Importante</AlertTitle>
                 <AlertDescription>
-                  A ServiçoPro é uma plataforma para facilitar o contato. Toda negociação, serviço e pagamento é de responsabilidade exclusiva entre você e o profissional.
+                  A AliaObra é uma plataforma para facilitar o contato. Toda negociação, serviço e pagamento é de responsabilidade exclusiva entre você e o profissional.
                 </AlertDescription>
             </Alert>
              <Tabs defaultValue={isAgency ? "professionals" : "portfolio"}>

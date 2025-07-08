@@ -7,8 +7,8 @@ import { Footer } from '@/components/footer';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
-  title: 'ServiçoPro',
-  description: 'ServiçoPro: Encontre os melhores prestadores de serviço para sua necessidade.',
+  title: 'AliaObra',
+  description: 'AliaObra: Encontre os melhores prestadores de serviço para sua necessidade.',
 };
 
 const ContentHeader = () => {

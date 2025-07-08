@@ -8,18 +8,18 @@ export function Footer() {
         <div className="flex flex-col items-center justify-center gap-2 mb-4">
             <Wrench className="h-6 w-6 text-primary" />
             <span className="text-lg font-bold text-primary tracking-tighter">
-            ServiçoPro
+            AliaObra
             </span>
         </div>
         <div className="text-center text-sm">
           <p className="max-w-3xl mx-auto mb-4">
-            A ServiçoPro é uma plataforma que conecta clientes a prestadores de serviços. Não nos responsabilizamos pelos serviços prestados, acordos feitos ou pagamentos transacionados entre as partes. Nossa missão é facilitar o contato.
+            A AliaObra é uma plataforma que conecta clientes a prestadores de serviços. Não nos responsabilizamos pelos serviços prestados, acordos feitos ou pagamentos transacionados entre as partes. Nossa missão é facilitar o contato.
           </p>
           <div className="flex justify-center gap-4 mb-4">
              <Link href="/terms" className="hover:text-primary underline-offset-4 hover:underline">Termos de Serviço</Link>
              <Link href="/privacy" className="hover:text-primary underline-offset-4 hover:underline">Política de Privacidade</Link>
           </div>
-          <p>&copy; {new Date().getFullYear()} ServiçoPro. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} AliaObra. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

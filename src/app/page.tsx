@@ -109,7 +109,7 @@ export default function Home() {
         <div id="about" className="py-12 md:py-20 bg-background">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a ServiçoPro</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a AliaObra</h2>
                     <p className="mt-4 max-w-3xl mx-auto text-lg leading-8 text-muted-foreground">
                         Nossa missão é conectar você aos melhores profissionais de forma simples, transparente e segura.
                     </p>
