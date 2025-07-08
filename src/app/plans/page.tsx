@@ -15,7 +15,7 @@ const plans = [
       'Visibilidade na busca padrão'
     ],
     cta: 'Comece Agora',
-    href: '/signup'
+    href: '/signup?plan=basico'
   },
   {
     name: 'Profissional',
@@ -30,7 +30,7 @@ const plans = [
       'Suporte prioritário'
     ],
     cta: 'Assinar Agora',
-    href: '/signup',
+    href: '/signup?plan=profissional',
     isFeatured: true
   },
   {
@@ -46,7 +46,7 @@ const plans = [
       'Painel de controle da agência'
     ],
     cta: 'Contratar Plano',
-    href: '/signup'
+    href: '/signup?plan=agencia'
   }
 ];
 

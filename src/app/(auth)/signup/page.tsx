@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from 'zod';
@@ -32,6 +32,8 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const plan = searchParams.get('plan');
 
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -69,6 +71,7 @@ export default function SignupPage() {
         fullName: values.fullName,
         cpfCnpj: values.cpfCnpj,
         userType: values.userType,
+        plan: plan || undefined,
       });
 
       if (!profileResult.success) {
@@ -86,10 +89,12 @@ export default function SignupPage() {
     } catch (error: any) {
       console.error(error);
       let errorMessage = "Ocorreu um erro inesperado.";
-      if (error.code === 'auth/api-key-not-valid') {
-        errorMessage = "A chave de API do Firebase é inválida. Verifique suas credenciais no arquivo .env e as configurações do seu projeto no console do Firebase.";
-      } else if (error.code === 'auth/email-already-in-use') {
+       if (error.code === 'auth/email-already-in-use') {
         errorMessage = "Este email já está em uso. Tente fazer login ou use um email diferente.";
+      } else if (error.code === 'auth/api-key-not-valid') {
+        errorMessage = "A chave de API do Firebase é inválida. Verifique suas credenciais e as configurações do seu projeto no console do Firebase.";
+      } else if (error.message.includes('Não foi possível criar o perfil')) {
+        errorMessage = "Sua conta foi criada, mas falhamos ao salvar seu perfil. Verifique as regras de segurança do Firestore ou contate o suporte.";
       } else if (error.message) {
         errorMessage = error.message;
       }

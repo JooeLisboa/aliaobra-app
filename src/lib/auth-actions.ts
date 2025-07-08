@@ -10,6 +10,7 @@ type UserProfileData = {
   fullName: string;
   cpfCnpj: string;
   userType: 'client' | 'provider' | 'agency';
+  plan?: string;
 };
 
 export async function createUserProfile(data: UserProfileData) {
@@ -21,6 +22,8 @@ export async function createUserProfile(data: UserProfileData) {
     if (data.userType === 'provider' || data.userType === 'agency') {
        const providerDocRef = doc(db, 'providers', data.uid);
        
+       const planName = data.plan ? data.plan.charAt(0).toUpperCase() + data.plan.slice(1) : 'Básico';
+
        // Create a default provider profile by casting a partial object to Provider
        const newProvider: Provider = {
            id: data.uid,
@@ -37,6 +40,7 @@ export async function createUserProfile(data: UserProfileData) {
            reviews: [],
            isVerified: false,
            type: data.userType === 'provider' ? 'individual' : 'agency',
+           plan: planName as Provider['plan'],
        };
 
        await setDoc(providerDocRef, newProvider);

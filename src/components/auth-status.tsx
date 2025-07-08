@@ -1,35 +1,22 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { useUser } from '@/hooks/use-user';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, UserCircle } from 'lucide-react';
+import { LogOut, UserCircle, LayoutDashboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function AuthStatus() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!auth) {
-      setIsLoading(false);
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleLogout = async () => {
     if (auth) {
@@ -40,6 +27,7 @@ export function AuthStatus() {
           description: "Você saiu da sua conta com sucesso.",
         });
         router.push('/');
+        router.refresh(); // Force a refresh to ensure state is cleared everywhere
       } catch (error) {
         console.error("Error signing out: ", error);
         toast({
@@ -77,6 +65,13 @@ export function AuthStatus() {
               </p>
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+           <DropdownMenuItem asChild className="cursor-pointer">
+             <Link href="/profile/edit">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>Meu Perfil</span>
+             </Link>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
