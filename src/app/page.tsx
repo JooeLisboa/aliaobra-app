@@ -49,7 +49,7 @@ export default function Home() {
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="space-y-4">
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-medium">
-                  Conectando Talentos à sua Obra
+                  Conectando Talentos à sua Necessidade
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground tracking-tighter">
                   Encontre o Profissional Certo para seu Projeto
@@ -109,9 +109,9 @@ export default function Home() {
         <div id="about" className="py-12 md:py-20 bg-background">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a AliaObra</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a ServiçoPro</h2>
                     <p className="mt-4 max-w-3xl mx-auto text-lg leading-8 text-muted-foreground">
-                        Nossa missão é conectar você aos melhores profissionais da construção civil de forma simples, transparente e segura.
+                        Nossa missão é conectar você aos melhores profissionais de forma simples, transparente e segura.
                     </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">

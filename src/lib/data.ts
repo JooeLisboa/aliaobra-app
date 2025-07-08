@@ -1,6 +1,6 @@
 import { db, areCredsAvailable } from './firebase';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import type { Provider, Service } from './types';
+import { collection, getDocs, doc, getDoc, query } from 'firebase/firestore';
+import type { Provider, Service, Proposal } from './types';
 
 export async function getProviders(): Promise<Provider[]> {
   if (!areCredsAvailable || !db) {
@@ -86,4 +86,19 @@ export async function getService(id: string): Promise<Service | null> {
         console.error("Error fetching service: ", error);
         return null;
     }
+}
+
+export async function getProposalsForService(serviceId: string): Promise<Proposal[]> {
+  if (!areCredsAvailable || !db) {
+    return [];
+  }
+  try {
+    const proposalsCollection = collection(db, 'services', serviceId, 'proposals');
+    const proposalSnapshot = await getDocs(proposalsCollection);
+    const proposalList = proposalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Proposal));
+    return proposalList.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error) {
+    console.error("Error fetching proposals: ", error);
+    return [];
+  }
 }

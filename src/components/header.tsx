@@ -21,7 +21,7 @@ const AppLogo = ({ className }: { className?: string }) => (
   <Link href="/" className={cn("flex items-center gap-2", className)} prefetch={false}>
     <Wrench className="h-7 w-7 text-primary" />
     <span className="text-xl font-bold text-primary tracking-tighter group-data-[collapsible=icon]:hidden">
-      AliaObra
+      ServiçoPro
     </span>
   </Link>
 );

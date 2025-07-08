@@ -93,6 +93,7 @@ export type Proposal = {
   amount: number;
   message: string;
   createdAt: number;
+  status: 'pending' | 'accepted' | 'declined';
 };
 
 export type Service = {
@@ -103,7 +104,9 @@ export type Service = {
   description: string;
   category: string;
   budget: number;
-  status: 'open' | 'in_progress' | 'completed';
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: number;
-  proposals?: Proposal[];
+  assignedProviderId?: string;
+  acceptedProposalId?: string;
+  acceptedProposalAmount?: number;
 };

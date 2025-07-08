@@ -31,8 +31,8 @@ export default function ServicesPage() {
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold">Encontre Serviços</h1>
-                    <p className="text-muted-foreground">Veja as oportunidades publicadas por clientes.</p>
+                    <h1 className="text-3xl font-bold">Mural de Serviços</h1>
+                    <p className="text-muted-foreground">Encontre oportunidades publicadas por clientes e envie sua proposta.</p>
                 </div>
                  {user && (isClient || !user.profile) && ( // Allow users with no profile to post a job
                     <Button asChild>

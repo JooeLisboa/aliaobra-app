@@ -16,7 +16,7 @@ import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Sen
 import { ReviewForm } from '@/components/review-form';
 import { ProviderCard } from '@/components/provider-card';
 import type { PortfolioItem, Provider } from '@/lib/types';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { startChat } from '@/lib/chat-actions';
-import { updateProviderStatus } from '@/lib/provider-actions';
 import { PlanIcon } from '@/components/plan-icon';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -39,9 +38,9 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const [providerData, setProviderData] = useState<Provider | null>();
   const [managedProviders, setManagedProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUpdatingStatus, startStatusUpdate] = useTransition();
-
+  
   useEffect(() => {
+    if (!id) return;
     const fetchProviderData = async () => {
       setIsLoading(true);
       const foundProvider = await getProvider(id);
@@ -57,38 +56,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     fetchProviderData();
   }, [id]);
 
-
-  // This effect sets up a timer to re-render the component and update time-based UI
-  useEffect(() => {
-    if (providerData && providerData.status === 'Em Serviço') {
-      const timer = setInterval(() => {
-        // Trigger a re-render to check if the 1-hour mark has passed
-        setProviderData(current => current ? { ...current } : null);
-      }, 1000 * 30); // Check every 30 seconds
-      return () => clearInterval(timer);
-    }
-  }, [providerData]);
-
-  const handleUpdateStatus = (newStatus: 'Disponível' | 'Em Serviço') => {
-    if (!providerData || !user || user.uid !== providerData.id) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Você não tem permissão para alterar este status.' });
-        return;
-    }
-    startStatusUpdate(async () => {
-      const result = await updateProviderStatus({
-        providerId: user.uid,
-        status: newStatus,
-        serviceAcceptedAt: newStatus === 'Em Serviço' ? Date.now() : undefined,
-      });
-
-      if (result.success) {
-        setProviderData((prev) => (prev ? { ...prev, status: newStatus, serviceAcceptedAt: newStatus === 'Em Serviço' ? Date.now() : undefined } : null));
-        toast({ title: `Serviço ${newStatus === 'Em Serviço' ? 'iniciado' : 'finalizado'}!`, description: 'O status do profissional foi atualizado.' });
-      } else {
-        toast({ variant: 'destructive', title: 'Erro', description: result.error });
-      }
-    });
-  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,18 +122,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const agencyPortfolio: PortfolioItem[] = isAgency
     ? managedProviders.flatMap(p => p.portfolio)
     : providerData.portfolio;
-
-  const serviceAcceptedAt = providerData.serviceAcceptedAt || 0;
-  const oneHourInMs = 60 * 60 * 1000;
-  const timeSinceAccepted = Date.now() - serviceAcceptedAt;
-  const canFinishService = timeSinceAccepted > oneHourInMs;
-
-  const getRemainingTime = () => {
-    if (canFinishService) return '';
-    const remainingMs = oneHourInMs - timeSinceAccepted;
-    const minutes = Math.ceil(remainingMs / (1000 * 60));
-    return `Liberado para finalizar em aprox. ${minutes} min.`;
-  };
   
   const sendMessageTrigger = (
       <Button variant="secondary" className="w-full" size="lg" disabled={!user || isOwner}>
@@ -225,33 +180,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                       }
                   </div>
                 
-                {isOwner && !isAgency && (
-                    <div className="w-full mb-4 flex flex-col gap-2">
-                      {providerData.status === 'Disponível' ? (
-                        <Button onClick={() => handleUpdateStatus('Em Serviço')} className="w-full" size="lg" disabled={isUpdatingStatus}>
-                          {isUpdatingStatus && <LoaderCircle className="animate-spin" />}
-                          {isUpdatingStatus ? 'Atualizando...' : 'Aceitar Serviço'}
-                        </Button>
-                      ) : (
-                        <Tooltip delayDuration={100}>
-                          <TooltipTrigger asChild>
-                            <div className="w-full">
-                              <Button onClick={() => handleUpdateStatus('Disponível')} disabled={!canFinishService || isUpdatingStatus} className="w-full" size="lg">
-                                {isUpdatingStatus && <LoaderCircle className="animate-spin" />}
-                                {isUpdatingStatus ? 'Finalizando...' : 'Finalizar Serviço'}
-                              </Button>
-                            </div>
-                          </TooltipTrigger>
-                          {!canFinishService && (
-                            <TooltipContent>
-                              <p>{getRemainingTime()}</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      )}
-                    </div>
-                  )}
-
                   <div className="flex flex-col gap-2 pt-4 border-t">
                     <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar</Button>
                     <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
@@ -302,7 +230,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                 <Info className="h-4 w-4" />
                 <AlertTitle className="font-semibold">Lembrete Importante</AlertTitle>
                 <AlertDescription>
-                  A AliaObra é uma plataforma para facilitar o contato. Toda negociação, serviço e pagamento é de responsabilidade exclusiva entre você e o profissional.
+                  A ServiçoPro é uma plataforma para facilitar o contato. Toda negociação, serviço e pagamento é de responsabilidade exclusiva entre você e o profissional.
                 </AlertDescription>
             </Alert>
              <Tabs defaultValue={isAgency ? "professionals" : "portfolio"}>

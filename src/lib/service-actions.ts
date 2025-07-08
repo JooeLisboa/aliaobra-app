@@ -1,6 +1,6 @@
 'use server';
 
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, runTransaction } from 'firebase/firestore';
 import { db, areCredsAvailable } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -29,8 +29,7 @@ export async function createService(formData: FormData) {
   }
 
   const { clientId, clientName, title, description, category, budget } = validation.data;
-  let serviceId: string | null = null;
-
+  
   try {
     const docRef = await addDoc(collection(db, 'services'), {
       clientId,
@@ -41,21 +40,118 @@ export async function createService(formData: FormData) {
       budget,
       status: 'open',
       createdAt: Date.now(),
-      proposals: [],
     });
     
-    serviceId = docRef.id;
     revalidatePath('/services');
-    revalidatePath(`/services/${serviceId}`);
-
   } catch (error) {
     console.error('Error creating service:', error);
     return { success: false, error: 'Falha ao criar o serviço.' };
   }
   
-  if (serviceId) {
-    redirect(`/services/${serviceId}`);
-  } else {
-    redirect('/services');
-  }
+  // Return success but don't redirect from the action
+  return { success: true };
+}
+
+
+const createProposalSchema = z.object({
+    serviceId: z.string().min(1),
+    providerId: z.string().min(1),
+    providerName: z.string().min(1),
+    providerAvatarUrl: z.string().url(),
+    amount: z.coerce.number().positive('O valor da proposta deve ser positivo.'),
+    message: z.string().min(10, 'A mensagem deve ter no mínimo 10 caracteres.'),
+});
+
+export async function createProposal(formData: FormData) {
+    if (!areCredsAvailable || !db) {
+        return { success: false, error: 'O serviço de banco de dados não está disponível.' };
+    }
+    const rawData = Object.fromEntries(formData.entries());
+    const validation = createProposalSchema.safeParse(rawData);
+
+    if (!validation.success) {
+        return { success: false, error: 'Dados da proposta inválidos.', details: validation.error.flatten() };
+    }
+
+    const { serviceId, ...proposalData } = validation.data;
+
+    try {
+        const proposalsRef = collection(db, 'services', serviceId, 'proposals');
+        await addDoc(proposalsRef, {
+            ...proposalData,
+            createdAt: Date.now(),
+            status: 'pending'
+        });
+        revalidatePath(`/services/${serviceId}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Error creating proposal:', error);
+        return { success: false, error: 'Não foi possível enviar a proposta.' };
+    }
+}
+
+const acceptProposalSchema = z.object({
+    serviceId: z.string().min(1),
+    proposalId: z.string().min(1),
+    providerId: z.string().min(1),
+    clientId: z.string().min(1),
+});
+
+export async function acceptProposal(data: z.infer<typeof acceptProposalSchema>) {
+    if (!areCredsAvailable || !db) {
+        return { success: false, error: 'Serviço de banco de dados indisponível.' };
+    }
+    const validation = acceptProposalSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, error: 'Dados inválidos para aceitar proposta.' };
+    }
+
+    const { serviceId, proposalId, providerId, clientId } = validation.data;
+    
+    const serviceRef = doc(db, 'services', serviceId);
+    const proposalRef = doc(db, 'services', serviceId, 'proposals', proposalId);
+    const providerRef = doc(db, 'providers', providerId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const serviceDoc = await transaction.get(serviceRef);
+            const proposalDoc = await transaction.get(proposalRef);
+            const providerDoc = await transaction.get(providerRef);
+
+            if (!serviceDoc.exists() || !proposalDoc.exists() || !providerDoc.exists()) {
+                throw new Error('Serviço, proposta ou profissional não encontrado.');
+            }
+            if (serviceDoc.data().clientId !== clientId) {
+                throw new Error('Acesso negado. Você não é o dono deste serviço.');
+            }
+            if (serviceDoc.data().status !== 'open') {
+                throw new Error('Este serviço não está mais aberto para propostas.');
+            }
+
+            // Update Service
+            transaction.update(serviceRef, {
+                status: 'in_progress',
+                assignedProviderId: providerId,
+                acceptedProposalId: proposalId,
+                acceptedProposalAmount: proposalDoc.data().amount,
+            });
+
+            // Update Provider Status
+            transaction.update(providerRef, {
+                status: 'Em Serviço',
+            });
+            
+            // Update Proposal Status
+            transaction.update(proposalRef, {
+                status: 'accepted'
+            });
+        });
+
+        revalidatePath(`/services/${serviceId}`);
+        revalidatePath(`/providers/${providerId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error accepting proposal:', error);
+        return { success: false, error: error.message || 'Ocorreu um erro ao aceitar a proposta.' };
+    }
 }

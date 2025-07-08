@@ -223,7 +223,7 @@ export default function SignupPage() {
 
                 <div className="text-center text-xs text-muted-foreground px-2 py-2">
                     <p>
-                        Ao criar sua conta, você concorda que a AliaObra é uma plataforma de conexão e não se responsabiliza pelos serviços, pagamentos ou acordos entre usuários.
+                        Ao criar sua conta, você concorda que a ServiçoPro é uma plataforma de conexão e não se responsabiliza pelos serviços, pagamentos ou acordos entre usuários.
                     </p>
                 </div>
 

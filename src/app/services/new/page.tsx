@@ -75,7 +75,7 @@ export default function NewServicePage() {
                     title: 'Serviço Publicado!',
                     description: 'Seu serviço já está visível para os profissionais.',
                 });
-                // The action now handles the redirect.
+                router.push('/services');
             }
         });
     }

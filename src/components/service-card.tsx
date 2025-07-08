@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Service } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Tag, User, Clock, ArrowRight } from 'lucide-react';
+import { Tag, User, Clock, ArrowRight, Briefcase } from 'lucide-react';
 
 interface ServiceCardProps {
   service: Service;
@@ -15,20 +15,19 @@ export function ServiceCard({ service }: ServiceCardProps) {
     <Link href={`/services/${service.id}`} className="block group">
       <Card className="h-full flex flex-col transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
         <CardHeader>
-            <CardTitle className="text-lg group-hover:text-primary">{service.title}</CardTitle>
-            <CardDescription className="flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1.5"><User className="w-3 h-3" /> {service.clientName}</span>
-                <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {formatDistanceToNow(new Date(service.createdAt), { locale: ptBR, addSuffix: true })}</span>
-            </CardDescription>
+          <div className='flex items-center gap-2'>
+            <Briefcase className="w-5 h-5 text-primary"/>
+            <Badge variant="outline">{service.category}</Badge>
+          </div>
+          <CardTitle className="text-lg group-hover:text-primary pt-2">{service.title}</CardTitle>
+          <CardDescription className="flex items-center gap-4 text-xs !mt-2">
+            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {formatDistanceToNow(new Date(service.createdAt), { locale: ptBR, addSuffix: true })}</span>
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex-grow">
           <p className="text-sm text-muted-foreground line-clamp-3">
             {service.description}
           </p>
-          <div className="flex items-center gap-2 mt-4">
-            <Tag className="w-4 h-4 text-primary" />
-            <Badge variant="outline">{service.category}</Badge>
-          </div>
         </CardContent>
         <CardFooter className="flex justify-between items-center bg-muted/50 p-4 rounded-b-lg">
           <div>

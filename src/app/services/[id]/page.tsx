@@ -1,30 +1,131 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { notFound } from 'next/navigation';
+import { useState, useEffect, useTransition } from 'react';
+import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getService } from '@/lib/data';
-import type { Service } from '@/lib/types';
-import { LoaderCircle, User, Calendar, Tag, DollarSign, Edit } from 'lucide-react';
+import { getService, getProposalsForService } from '@/lib/data';
+import type { Service, Proposal, Provider } from '@/lib/types';
+import { LoaderCircle, User, Calendar, Tag, DollarSign, Edit, Send, Check } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/hooks/use-user';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { createProposal, acceptProposal } from '@/lib/service-actions';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+function ProposalForm({ serviceId, providerId, providerProfile }: { serviceId: string; providerId: string; providerProfile: Provider }) {
+    const { toast } = useToast();
+    const [open, setOpen] = useState(false);
+    const [isPending, startTransition] = useTransition();
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        startTransition(async () => {
+            const formData = new FormData(event.currentTarget);
+            formData.append('serviceId', serviceId);
+            formData.append('providerId', providerId);
+            formData.append('providerName', providerProfile.name);
+            formData.append('providerAvatarUrl', providerProfile.avatarUrl);
+
+            const result = await createProposal(formData);
+
+            if (result.success) {
+                toast({ title: 'Proposta Enviada!', description: 'O cliente foi notificado.' });
+                setOpen(false);
+            } else {
+                toast({ variant: 'destructive', title: 'Erro ao Enviar Proposta', description: result.error });
+            }
+        });
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="lg" className="w-full">
+                    <Send className="mr-2 h-4 w-4" /> Enviar Proposta
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Enviar Proposta</DialogTitle>
+                    <DialogDescription>
+                        Descreva porque você é a pessoa certa para este trabalho e informe sua proposta de valor.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="amount">Sua proposta (R$)</Label>
+                            <Input id="amount" name="amount" type="number" step="0.01" placeholder="350,00" required disabled={isPending} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="message">Mensagem</Label>
+                            <Textarea id="message" name="message" placeholder="Olá, tenho experiência com este tipo de serviço..." required className="min-h-[120px]" disabled={isPending} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="submit" disabled={isPending}>
+                            {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                            Enviar Proposta
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 export default function ServiceDetailPage({ params }: { params: { id: string } }) {
     const [service, setService] = useState<Service | null | undefined>(undefined);
-    const { user } = useUser();
+    const [proposals, setProposals] = useState<Proposal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { user, isLoading: isUserLoading } = useUser();
+    const [isAccepting, startAcceptance] = useTransition();
+    const { toast } = useToast();
+    const router = useRouter();
 
     useEffect(() => {
-        const fetchService = async () => {
+        const fetchServiceData = async () => {
+            setIsLoading(true);
             const serviceData = await getService(params.id);
             setService(serviceData);
+            if (serviceData) {
+                const proposalData = await getProposalsForService(params.id);
+                setProposals(proposalData);
+            }
+            setIsLoading(false);
         };
-        fetchService();
+        fetchServiceData();
     }, [params.id]);
+    
+    const handleAcceptProposal = (proposal: Proposal) => {
+      if (!service) return;
+      startAcceptance(async () => {
+        const result = await acceptProposal({
+          serviceId: service.id,
+          proposalId: proposal.id,
+          providerId: proposal.providerId,
+          clientId: service.clientId
+        });
 
-    if (service === undefined) {
+        if (result.success) {
+          toast({ title: 'Proposta Aceita!', description: 'O profissional foi notificado e o serviço iniciado.' });
+          router.refresh();
+        } else {
+          toast({ variant: 'destructive', title: 'Erro', description: result.error });
+        }
+      });
+    };
+
+    if (service === undefined || isUserLoading) {
         return (
             <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
                 <LoaderCircle className="w-8 h-8 animate-spin" />
@@ -37,22 +138,25 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
     }
 
     const isOwner = user && user.uid === service.clientId;
-    const isProvider = user && user.profile?.userType !== 'client';
-
+    const isProvider = user?.profile?.userType === 'provider' || user?.profile?.userType === 'agency';
+    const hasAlreadyProposed = user && proposals.some(p => p.providerId === user.uid);
+    
     return (
         <div className="container mx-auto max-w-4xl py-12">
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
-                            <Badge variant="secondary" className="mb-2">{service.status.toUpperCase()}</Badge>
+                            <Badge variant={service.status === 'open' ? 'secondary' : 'default'} className="mb-2">
+                                {service.status === 'open' ? 'Aberto' : service.status === 'in_progress' ? 'Em Andamento' : 'Concluído'}
+                            </Badge>
                             <CardTitle className="text-3xl">{service.title}</CardTitle>
                             <CardDescription className="flex items-center gap-4 mt-2">
                                 <span className="flex items-center gap-1.5"><User className="w-4 h-4"/> Publicado por {service.clientName}</span>
                                 <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4"/> {format(new Date(service.createdAt), 'dd/MM/yyyy')}</span>
                             </CardDescription>
                         </div>
-                         {isOwner && (
+                         {isOwner && service.status === 'open' && (
                             <Button variant="outline" size="sm">
                                 <Edit className="mr-2 h-4 w-4"/> Editar
                             </Button>
@@ -82,20 +186,83 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                         <p className="text-foreground/80 whitespace-pre-wrap">{service.description}</p>
                     </div>
                     
-                    <div className="pt-6 border-t">
-                        <h3 className="text-xl font-semibold mb-4">Propostas Recebidas</h3>
-                        <div className="text-center py-8 bg-muted/50 rounded-lg">
-                            <p className="text-muted-foreground">
-                                {isProvider ? "Seja o primeiro a enviar uma proposta!" : "As propostas dos profissionais aparecerão aqui."}
-                            </p>
-                        </div>
+                     <div className="pt-6 border-t">
+                        <h3 className="text-xl font-semibold mb-4">
+                          {isOwner ? 'Propostas Recebidas' : 'Profissional Contratado'}
+                        </h3>
+                         {service.status === 'in_progress' && service.assignedProviderId ? (
+                            <Card>
+                               <CardHeader>
+                                  <CardTitle>Serviço em andamento com:</CardTitle>
+                               </CardHeader>
+                               <CardContent>
+                                    <Link href={`/providers/${service.assignedProviderId}`} className="flex items-center gap-3 hover:bg-muted p-2 rounded-md">
+                                        <Avatar>
+                                            <AvatarImage src={proposals.find(p => p.providerId === service.assignedProviderId)?.providerAvatarUrl} />
+                                            <AvatarFallback>{proposals.find(p => p.providerId === service.assignedProviderId)?.providerName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-bold text-primary">{proposals.find(p => p.providerId === service.assignedProviderId)?.providerName}</p>
+                                            <p className="text-sm text-muted-foreground">Proposta aceita no valor de R$ {service.acceptedProposalAmount?.toLocaleString('pt-BR')}</p>
+                                        </div>
+                                    </Link>
+                               </CardContent>
+                            </Card>
+                         ) : (
+                          <>
+                           {isOwner && (
+                             proposals.length > 0 ? (
+                               <div className="space-y-4">
+                                 {proposals.map(proposal => (
+                                   <Card key={proposal.id} className="bg-secondary/30">
+                                     <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div className="flex items-center gap-3 flex-1">
+                                           <Avatar>
+                                              <AvatarImage src={proposal.providerAvatarUrl} alt={proposal.providerName} />
+                                              <AvatarFallback>{proposal.providerName.charAt(0)}</AvatarFallback>
+                                           </Avatar>
+                                           <div className="flex-1">
+                                              <Link href={`/providers/${proposal.providerId}`} className="font-bold text-primary hover:underline">{proposal.providerName}</Link>
+                                              <p className="text-sm text-muted-foreground line-clamp-2">{proposal.message}</p>
+                                           </div>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+                                            <div className="text-right">
+                                                <p className="text-xs text-muted-foreground">Valor Proposto</p>
+                                                <p className="text-lg font-bold">R$ {proposal.amount.toLocaleString('pt-BR')}</p>
+                                            </div>
+                                            <Button onClick={() => handleAcceptProposal(proposal)} disabled={isAccepting}>
+                                                {isAccepting ? <LoaderCircle className="w-4 h-4 animate-spin"/> : <Check className="w-4 h-4"/>}
+                                                Aceitar
+                                            </Button>
+                                        </div>
+                                     </CardContent>
+                                   </Card>
+                                 ))}
+                               </div>
+                             ) : (
+                               <div className="text-center py-8 bg-muted/50 rounded-lg">
+                                  <p className="text-muted-foreground">Aguardando propostas dos profissionais.</p>
+                               </div>
+                             )
+                           )}
+                          </>
+                         )}
                     </div>
                     
-                    {isProvider && !isOwner && (
+                    {isProvider && !isOwner && service.status === 'open' && (
                         <div className="pt-6 border-t">
-                           <Button size="lg" className="w-full">
-                             Enviar Proposta
-                           </Button>
+                            {hasAlreadyProposed ? (
+                                <Alert variant="default">
+                                  <Check className="h-4 w-4" />
+                                  <AlertTitle>Proposta Enviada!</AlertTitle>
+                                  <AlertDescription>
+                                    Você já enviou uma proposta para este serviço. O cliente irá analisá-la.
+                                  </AlertDescription>
+                                </Alert>
+                            ) : (
+                                <ProposalForm serviceId={service.id} providerId={user.uid} providerProfile={user.profile as Provider} />
+                            )}
                         </div>
                     )}
                 </CardContent>
