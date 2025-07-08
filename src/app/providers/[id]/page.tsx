@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/lib/hooks/use-user';
+import { useUser } from '@/hooks/use-user';
 import { startChat } from '@/lib/chat-actions';
 import { updateProviderStatus } from '@/lib/provider-actions';
 
