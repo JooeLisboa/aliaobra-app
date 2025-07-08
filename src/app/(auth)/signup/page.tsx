@@ -86,7 +86,9 @@ export default function SignupPage() {
     } catch (error: any) {
       console.error(error);
       let errorMessage = "Ocorreu um erro inesperado.";
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.code === 'auth/api-key-not-valid') {
+        errorMessage = "A chave de API do Firebase é inválida. Verifique suas credenciais no arquivo .env e as configurações do seu projeto no console do Firebase.";
+      } else if (error.code === 'auth/email-already-in-use') {
         errorMessage = "Este email já está em uso por outra conta.";
       } else if (error.message) {
         errorMessage = error.message;
