@@ -1,0 +1,68 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user is the owner of a document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // USERS (Clients) collection
+    // Only the authenticated user can read or modify their own profile.
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // PROVIDERS collection
+    // Anyone can view a provider's profile.
+    // Only the owner can create or update their profile.
+    match /providers/{providerId} {
+      allow read;
+      allow create, update: if isAuthenticated() && isOwner(providerId);
+      // No one can delete a provider profile through the client, for safety.
+      allow delete: if false;
+    }
+
+    // SERVICES collection
+    // Anyone can read service listings.
+    // Only the authenticated owner can create or update their own service.
+    match /services/{serviceId} {
+      allow read;
+      allow create: if isAuthenticated() && isOwner(request.resource.data.clientId);
+      allow update: if isAuthenticated() && isOwner(resource.data.clientId);
+    }
+
+    // PROPOSALS subcollection
+    // Only the client who owns the service or the provider who made the proposal can read it.
+    // A provider can only create a proposal for themselves.
+    match /services/{serviceId}/proposals/{proposalId} {
+      allow read: if isAuthenticated() && (
+        isOwner(get(/databases/$(database)/documents/services/$(serviceId)).data.clientId) || 
+        isOwner(resource.data.providerId)
+      );
+      allow create: if isAuthenticated() && isOwner(request.resource.data.providerId);
+    }
+
+    // CHATS collection
+    // Only participants can read/write the chat document itself (e.g., for lastMessage updates).
+    match /chats/{chatId} {
+      allow read, write: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
+    }
+
+    // MESSAGES subcollection
+    // Only participants of the chat can read or send messages.
+    match /chats/{chatId}/messages/{messageId} {
+      allow read, create: if isAuthenticated() && 
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+      // Users cannot update or delete messages.
+      allow update, delete: if false;
+    }
+  }
+}
