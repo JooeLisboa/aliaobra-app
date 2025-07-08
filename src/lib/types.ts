@@ -1,7 +1,9 @@
+import type { User as FirebaseAuthUser } from 'firebase/auth';
+
 export type Review = {
   id: string;
   author: {
-    id: string;
+    id:string;
     name: string;
     avatarUrl: string;
   };
@@ -17,6 +19,16 @@ export type PortfolioItem = {
   description: string;
   "data-ai-hint": string;
 };
+
+export type UserProfile = {
+  uid: string;
+  email: string;
+  name: string;
+  cpfCnpj: string;
+  userType: 'client';
+  createdAt: any; // Firestore timestamp
+};
+
 
 export type Provider = {
   id: string;
@@ -43,6 +55,11 @@ export type Provider = {
     name: string;
   };
 };
+
+export type AppUser = FirebaseAuthUser & {
+  profile?: Provider | UserProfile;
+};
+
 
 export type ChatMessage = {
   id: string;
