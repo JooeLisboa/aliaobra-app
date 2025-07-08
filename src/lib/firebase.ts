@@ -4,12 +4,12 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAJuaRmfd4Sl7sojXaWWbSltj-8WyyHEbo",
-  authDomain: "serviopro-vjgij.firebaseapp.com",
-  projectId: "serviopro-vjgij",
-  storageBucket: "serviopro-vjgij.appspot.com",
-  messagingSenderId: "109077450046",
-  appId: "1:109077450046:web:7672c9e4f6cb32dd6b706f"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 

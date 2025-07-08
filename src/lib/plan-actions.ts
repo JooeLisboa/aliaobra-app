@@ -14,6 +14,15 @@ const updatePlanSchema = z.object({
   userEmail: z.string().email().optional(),
 });
 
+
+// ====================================================================================
+// IMPORTANTE PARA MONETIZAÇÃO REAL:
+// Em um ambiente de produção, esta função NUNCA deve ser chamada diretamente
+// pelo front-end após o clique de um botão. Ela deve ser acionada por um WEBHOOK seguro
+// do seu provedor de pagamento (ex: Stripe, Mercado Pago) DEPOIS que um pagamento
+// for confirmado com sucesso. Isso garante que os usuários não possam obter um plano
+// pago sem efetivamente pagar por ele.
+// ====================================================================================
 export async function updateUserPlan(data: z.infer<typeof updatePlanSchema>) {
   if (!areCredsAvailable || !db) {
     return { success: false, error: 'O serviço de banco de dados não está disponível.' };

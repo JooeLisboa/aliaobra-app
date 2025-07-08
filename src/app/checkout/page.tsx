@@ -102,6 +102,18 @@ function CheckoutContent() {
         if (!user || !selectedPlan || selectedPlan.id === 'basico') return;
 
         startTransition(async () => {
+            // ====================================================================================
+            // INTEGRAÇÃO DE PAGAMENTO REAL:
+            // O código abaixo é uma SIMULAÇÃO. Em um aplicativo real, você deve:
+            // 1. Chamar uma ação de servidor que cria uma sessão de pagamento com seu provedor (Stripe, etc.).
+            //    const response = await createCheckoutSession({ planId: selectedPlan.id, userId: user.uid });
+            //    if (response.url) {
+            //        window.location.href = response.url; // Redireciona para a página de pagamento
+            //    }
+            // 2. A ação `updateUserPlan` deve ser movida para um webhook. O provedor de pagamento
+            //    chamará esse webhook APÓS o pagamento ser confirmado para atualizar o plano do usuário com segurança.
+            // ====================================================================================
+            
             const result = await updateUserPlan({
                 userId: user.uid,
                 planId: selectedPlan.id,
