@@ -4,14 +4,16 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 
+// Hardcoding credentials for debugging. This bypasses .env files to ensure the correct values are used.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyAJuaRmfd4Sl7sojXaWWbSltj-8WyyHEbo",
+  authDomain: "serviopro-vjgij.firebaseapp.com",
+  projectId: "serviopro-vjgij",
+  storageBucket: "serviopro-vjgij.appspot.com",
+  messagingSenderId: "109077450046",
+  appId: "1:109077450046:web:7672c9e4f6cb32dd6b706f"
 };
+
 
 // Log the config in development to help debug issues.
 // This will only show in the browser's developer console.
