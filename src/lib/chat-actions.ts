@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -151,10 +152,12 @@ export async function sendMessageInChat(formData: FormData) {
 export async function getUserChats(userId: string): Promise<Chat[]> {
   if (!areCredsAvailable || !db) return [];
   
+  // The composite index required by orderBy() is not available in this environment.
+  // We remove the orderBy clause from the query and sort the results in memory instead.
   const chatsQuery = query(
     collection(db, 'chats'),
-    where('participantIds', 'array-contains', userId),
-    orderBy('updatedAt', 'desc')
+    where('participantIds', 'array-contains', userId)
+    // orderBy('updatedAt', 'desc') // This line is removed to prevent the index error.
   );
 
   const querySnapshot = await getDocs(chatsQuery);
@@ -168,5 +171,8 @@ export async function getUserChats(userId: string): Promise<Chat[]> {
       return { id: doc.id, ...data } as Chat
   });
   
+  // Sort the chats in memory by the 'updatedAt' timestamp in descending order.
+  chats.sort((a, b) => b.updatedAt - a.updatedAt);
+
   return chats;
 }
