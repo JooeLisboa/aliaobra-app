@@ -43,7 +43,8 @@ export async function updateProfileDetails(formData: FormData) {
 
     if (avatarFile && avatarFile.size > 0) {
       const avatarRef = ref(storage, `profile-pictures/${userId}/avatar`);
-      await uploadBytes(avatarRef, avatarFile);
+      const buffer = await avatarFile.arrayBuffer();
+      await uploadBytes(avatarRef, buffer, { contentType: avatarFile.type });
       avatarUrl = await getDownloadURL(avatarRef);
     }
     
@@ -119,7 +120,8 @@ export async function updateProfilePortfolio(formData: FormData) {
         const uploadedPortfolioItems: PortfolioItem[] = [];
         for (const item of newPortfolioFiles) {
             const portfolioImageRef = ref(storage, `portfolio-images/${userId}/${Date.now()}_${item.file.name}`);
-            await uploadBytes(portfolioImageRef, item.file);
+            const buffer = await item.file.arrayBuffer();
+            await uploadBytes(portfolioImageRef, buffer, { contentType: item.file.type });
             const imageUrl = await getDownloadURL(portfolioImageRef);
             uploadedPortfolioItems.push({
                 id: `item_${Date.now()}_${item.index}`,
