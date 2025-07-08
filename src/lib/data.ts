@@ -2,6 +2,12 @@ import { db, areCredsAvailable } from './firebase';
 import { collection, getDocs, doc, getDoc, query } from 'firebase/firestore';
 import type { Provider, Service, Proposal } from './types';
 
+const planOrder: Record<string, number> = {
+  'Agência': 0,
+  'Profissional': 1,
+  'Básico': 2,
+};
+
 export async function getProviders(): Promise<Provider[]> {
   if (!areCredsAvailable || !db) {
     return [];
@@ -10,6 +16,14 @@ export async function getProviders(): Promise<Provider[]> {
     const providersCollection = collection(db, 'providers');
     const providerSnapshot = await getDocs(providersCollection);
     const providerList = providerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Provider));
+    
+    // Sort providers to show subscribers first
+    providerList.sort((a, b) => {
+        const planA = a.plan || 'Básico';
+        const planB = b.plan || 'Básico';
+        return (planOrder[planA] ?? 99) - (planOrder[planB] ?? 99);
+    });
+
     return providerList;
   } catch (error) {
     console.error("Error fetching providers: ", error);

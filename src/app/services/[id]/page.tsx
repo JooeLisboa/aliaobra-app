@@ -5,7 +5,7 @@ import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getService, getProposalsForService } from '@/lib/data';
 import type { Service, Proposal, Provider } from '@/lib/types';
-import { LoaderCircle, User, Calendar, Tag, DollarSign, Edit, Send, Check } from 'lucide-react';
+import { LoaderCircle, User, Calendar, Tag, DollarSign, Edit, Send, Check, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -139,6 +139,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
 
     const isOwner = user && user.uid === service.clientId;
     const isProvider = user?.profile?.userType === 'provider' || user?.profile?.userType === 'agency';
+    const isSubscriber = isProvider && user?.profile?.plan !== 'Básico';
     const hasAlreadyProposed = user && proposals.some(p => p.providerId === user.uid);
     
     return (
@@ -260,8 +261,19 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                                     Você já enviou uma proposta para este serviço. O cliente irá analisá-la.
                                   </AlertDescription>
                                 </Alert>
-                            ) : (
+                            ) : isSubscriber ? (
                                 <ProposalForm serviceId={service.id} providerId={user.uid} providerProfile={user.profile as Provider} />
+                            ) : (
+                                <Alert variant="default" className="border-primary/50 text-center">
+                                    <ShieldAlert className="h-4 w-4" />
+                                    <AlertTitle className="font-bold text-primary">Recurso Exclusivo para Assinantes</AlertTitle>
+                                    <AlertDescription>
+                                        Você precisa de um plano Profissional ou Agência para enviar propostas para os serviços.
+                                        <Button asChild size="sm" className="mt-4">
+                                            <Link href="/plans">Fazer Upgrade Agora</Link>
+                                        </Button>
+                                    </AlertDescription>
+                                </Alert>
                             )}
                         </div>
                     )}

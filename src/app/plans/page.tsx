@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Info } from 'lucide-react';
+import { Check, Info, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,12 +19,12 @@ const plans = [
     name: 'Básico',
     id: 'basico',
     price: 'Grátis',
-    description: 'Comece a divulgar seu trabalho e a receber avaliações.',
+    description: 'Crie seu perfil e seja encontrado por clientes.',
     features: [
-      'Perfil público',
+      'Perfil público visível na busca',
+      'Receber contatos e mensagens diretas',
       'Até 5 fotos no portfólio',
-      'Receber avaliações de clientes',
-      'Visibilidade na busca padrão'
+      'Receber avaliações de clientes'
     ],
     cta: 'Comece Agora',
   },
@@ -33,14 +33,14 @@ const plans = [
     id: 'profissional',
     price: 'R$ 29,90',
     priceFrequency: '/mês',
-    description: 'Destaque-se da concorrência e consiga mais clientes.',
+    description: 'A ferramenta essencial para quem busca trabalho ativamente.',
     features: [
       'Todos os benefícios do Básico',
-      'Perfil em destaque nos resultados',
+      'Envie propostas ILIMITADAS para os serviços do mural',
+      'Perfil em destaque nos resultados de busca',
       'Selo de Profissional Verificado',
       'Ícone de Assinante Ouro',
       'Portfólio com até 20 fotos',
-      'Suporte prioritário'
     ],
     cta: 'Assinar Agora',
     isFeatured: true
@@ -50,12 +50,11 @@ const plans = [
     id: 'agencia',
     price: 'R$ 79,90',
     priceFrequency: '/mês',
-    description: 'Gerencie múltiplos profissionais em uma única conta.',
+    description: 'Gerencie múltiplos profissionais e domine o mercado.',
     features: [
       'Todos os benefícios do Profissional',
-      'Gerenciamento de até 10 perfis',
+      'Gerenciamento de até 10 perfis de membros',
       'Ícone de Agência Esmeralda',
-      'Portfólio consolidado da equipe',
       'Painel de controle da agência'
     ],
     cta: 'Contratar Plano',
