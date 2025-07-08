@@ -1,6 +1,6 @@
 import { db, areCredsAvailable } from './firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import type { Provider } from './types';
+import type { Provider, Service } from './types';
 
 export async function getProviders(): Promise<Provider[]> {
   if (!areCredsAvailable || !db) {
@@ -49,5 +49,41 @@ export async function getProvidersByIds(ids: string[]): Promise<Provider[]> {
     } catch(error) {
         console.error("Error fetching providers by IDs: ", error);
         return [];
+    }
+}
+
+export async function getServices(): Promise<Service[]> {
+  if (!areCredsAvailable || !db) {
+    return [];
+  }
+  try {
+    const servicesCollection = collection(db, 'services');
+    const serviceSnapshot = await getDocs(servicesCollection);
+    const serviceList = serviceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
+    // Sort by most recent
+    return serviceList.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error) {
+    console.error("Error fetching services: ", error);
+    return [];
+  }
+}
+
+export async function getService(id: string): Promise<Service | null> {
+    if (!areCredsAvailable || !db) {
+        return null;
+    }
+    try {
+        const serviceRef = doc(db, 'services', id);
+        const serviceSnap = await getDoc(serviceRef);
+
+        if (serviceSnap.exists()) {
+            return { id: serviceSnap.id, ...serviceSnap.data() } as Service;
+        } else {
+            console.warn(`Service with id ${id} not found.`);
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching service: ", error);
+        return null;
     }
 }

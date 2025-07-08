@@ -11,7 +11,7 @@ import {
   SidebarMenuButton, 
   SidebarTrigger 
 } from "@/components/ui/sidebar";
-import { Wrench, Home, ClipboardList, Info, MessageSquare } from "lucide-react";
+import { Wrench, Home, ClipboardList, Info, MessageSquare, Briefcase } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
 import { AuthStatus } from "./auth-status";
@@ -44,6 +44,11 @@ export function MainSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Início', side: 'right'}}>
                 <Link href="/"><Home /><span>Início</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={{children: 'Serviços', side: 'right'}}>
+                <Link href="/services"><Briefcase /><span>Serviços</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>

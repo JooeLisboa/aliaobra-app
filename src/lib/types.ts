@@ -84,3 +84,26 @@ export type Chat = {
   };
   updatedAt: number;
 };
+
+export type Proposal = {
+  id: string;
+  providerId: string;
+  providerName: string;
+  providerAvatarUrl: string;
+  amount: number;
+  message: string;
+  createdAt: number;
+};
+
+export type Service = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  title: string;
+  description: string;
+  category: string;
+  budget: number;
+  status: 'open' | 'in_progress' | 'completed';
+  createdAt: number;
+  proposals?: Proposal[];
+};
