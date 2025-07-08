@@ -54,8 +54,8 @@ export async function createUserProfile(data: UserProfileData) {
     }
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating user profile in Firestore: ", error);
-    return { success: false, error: 'Não foi possível criar o perfil no banco de dados.' };
+    return { success: false, error: `Não foi possível criar o perfil no banco de dados: ${error.message}` };
   }
 }
