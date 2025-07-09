@@ -16,7 +16,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { addDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // This static data structure now matches the StripeProduct type for consistency.
 const staticPlans = [
@@ -60,6 +60,7 @@ export default function PlansPage() {
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -94,7 +95,7 @@ export default function PlansPage() {
         });
         router.replace('/profile/edit', { scroll: false });
     }
-  }, [router, toast]);
+  }, [router, toast, searchParams]);
 
 
   const handleCheckout = async (priceId: string) => {
