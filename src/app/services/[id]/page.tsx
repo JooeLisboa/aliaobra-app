@@ -139,7 +139,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
     const isOwner = user && user.uid === service.clientId;
     const isProvider = user?.profile?.userType === 'provider' || user?.profile?.userType === 'agency';
     const hasAlreadyProposed = user && proposals.some(p => p.providerId === user.uid);
-    const isSubscriber = isProvider && user?.subscription?.status === 'active' || user?.subscription?.status === 'trialing';
+    const isSubscriber = isProvider && (user?.subscription?.status === 'active' || user?.subscription?.status === 'trialing');
 
     
     return (

@@ -10,7 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import type { StripeProduct } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PlanIcon } from '@/components/plan-icon';
 import { getActiveProductsWithPrices } from '@/lib/data';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { loadStripe } from '@stripe/stripe-js';
@@ -212,7 +211,7 @@ export default function PlansPage() {
             <CardContent className="flex-grow">
               <div className="text-center mb-6">
                 <span className="text-4xl font-bold">
-                  {Number(plan.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  R$ {plan.price}
                 </span>
                 <span className="text-muted-foreground">/mês</span>
               </div>
