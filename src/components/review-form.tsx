@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -53,6 +54,7 @@ export function ReviewForm({ providerId }: { providerId: string }) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const { user } = useUser();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -142,9 +144,7 @@ export function ReviewForm({ providerId }: { providerId: string }) {
         setOpen(false);
         form.reset();
         setCapturedImage(null);
-        // We can't use router.refresh() here as it's not a Route Handler,
-        // so we reload the page to show the new review.
-        window.location.reload();
+        router.refresh();
       } else {
         toast({ variant: "destructive", title: "Erro ao Enviar", description: result.error });
       }

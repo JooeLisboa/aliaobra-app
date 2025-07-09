@@ -88,7 +88,7 @@ export default function PlansPage() {
   }, [isUserLoading, toast]);
   
   useEffect(() => {
-    if (searchParams.get('plan_success')) {
+    if (searchParams?.get('plan_success')) {
         toast({
             title: "Assinatura Ativada!",
             description: "Seu plano foi atualizado com sucesso.",
@@ -205,6 +205,41 @@ export default function PlansPage() {
       </Card>
     );
   };
+  
+  const renderContent = () => {
+    if (isLoading) {
+      return Array.from({ length: 3 }).map((_, i) => (
+        <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
+      ));
+    }
+
+    if (displayableProducts.length > 0) {
+      return displayableProducts.map((product) => renderPlanCard(product));
+    }
+
+    // Fallback content when no products are found
+    return (
+      <>
+        {staticPlans.map((plan) => renderPlanCard(plan, true))}
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <CardTitle className="text-2xl text-center">Nenhum Plano Ativo Encontrado</CardTitle>
+            <CardDescription className="text-center">
+              Os planos acima são um exemplo. Para ativar os pagamentos, siga os passos abaixo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-left space-y-3 max-w-md mx-auto">
+            <p>1. Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel do Stripe</a>.</p>
+            <p>2. Crie os produtos para cada plano (ex: "Plano Profissional").</p>
+            <p>3. Adicione um preço a cada produto, garantindo que seja <strong>Recorrente</strong>.</p>
+            <p>4. Em "Metadados", adicione a chave `firebaseRole` com o valor correspondente (ex: `profissional`).</p>
+            <p>5. Após salvar, a extensão do Stripe irá sincronizar os dados e os planos aparecerão aqui.</p>
+          </CardContent>
+        </Card>
+      </>
+    );
+  };
 
   return (
     <TooltipProvider>
@@ -227,33 +262,7 @@ export default function PlansPage() {
         </Alert>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
-            ))
-          ) : displayableProducts.length > 0 ? (
-            displayableProducts.map((product) => renderPlanCard(product))
-          ) : (
-            <>
-              {staticPlans.map((plan) => renderPlanCard(plan, true))}
-              <Card className="md:col-span-3">
-                  <CardHeader>
-                      <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                      <CardTitle className="text-2xl text-center">Nenhum Plano Ativo Encontrado</CardTitle>
-                      <CardDescription className="text-center">
-                          Os planos acima são um exemplo. Para ativar os pagamentos, siga os passos abaixo.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-left space-y-3 max-w-md mx-auto">
-                      <p>1. Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel do Stripe</a>.</p>
-                      <p>2. Crie os produtos para cada plano (ex: "Plano Profissional").</p>
-                      <p>3. Adicione um preço a cada produto, garantindo que seja <strong>Recorrente</strong>.</p>
-                      <p>4. Em "Metadados", adicione a chave `firebaseRole` com o valor correspondente (ex: `profissional`).</p>
-                      <p>5. Após salvar, a extensão do Stripe irá sincronizar os dados e os planos aparecerão aqui.</p>
-                  </CardContent>
-              </Card>
-            </>
-          )}
+          {renderContent()}
         </div>
 
         <Card className="max-w-6xl mx-auto mt-12 text-center">
