@@ -18,44 +18,37 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
+// This static data structure now matches the StripeProduct type for consistency.
 const staticPlans = [
   {
     id: 'static-basico',
     name: 'Básico',
     description: 'Para quem está começando e quer ter uma presença na plataforma.',
-    price: '5,97',
-    features: [
-      'Criação de perfil completo',
-      'Visibilidade na busca de profissionais',
-      'Recebimento de contatos diretos',
-    ],
-    isFeatured: false,
+    prices: [{ unit_amount: 597, recurring: { interval: 'month' } }],
+    metadata: {
+      isFeatured: 'false',
+      features: 'Criação de perfil completo,Visibilidade na busca de profissionais,Recebimento de contatos diretos',
+    },
   },
   {
     id: 'static-profissional',
     name: 'Profissional',
     description: 'Ideal para profissionais que buscam ativamente por novos trabalhos.',
-    price: '29,97',
-    features: [
-      'Todos os benefícios do Básico',
-      'Envio de propostas para serviços',
-      'Perfil com destaque nos resultados',
-      'Selo de Assinante no perfil',
-    ],
-    isFeatured: true,
+    prices: [{ unit_amount: 2997, recurring: { interval: 'month' } }],
+    metadata: {
+      isFeatured: 'true',
+      features: 'Todos os benefícios do Básico,Envio de propostas para serviços,Perfil com destaque nos resultados,Selo de Assinante no perfil',
+    },
   },
   {
     id: 'static-agencia',
     name: 'Agência',
     description: 'Para empresas e equipes que gerenciam múltiplos profissionais.',
-    price: '69,97',
-    features: [
-      'Todos os benefícios do Profissional',
-      'Gerenciamento de até 5 perfis',
-      'Painel de controle para a agência',
-      'Suporte prioritário',
-    ],
-    isFeatured: false,
+    prices: [{ unit_amount: 6997, recurring: { interval: 'month' } }],
+    metadata: {
+      isFeatured: 'false',
+      features: 'Todos os benefícios do Profissional,Gerenciamento de até 5 perfis,Painel de controle para a agência,Suporte prioritário',
+    },
   },
 ];
 
@@ -70,19 +63,39 @@ export default function PlansPage() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      setIsLoadingProducts(true);
-      const prods = await getActiveProductsWithPrices();
-      prods.forEach(p => p.prices.sort((a,b) => (a.unit_amount ?? 0) - (b.unit_amount ?? 0)));
-      prods.sort((a,b) => {
-        const aPrice = a.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
-        const bPrice = b.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
-        return aPrice - bPrice;
-      });
-      setProducts(prods);
-      setIsLoadingProducts(false);
+      try {
+        setIsLoadingProducts(true);
+        const prods = await getActiveProductsWithPrices();
+        prods.forEach(p => p.prices.sort((a,b) => (a.unit_amount ?? 0) - (b.unit_amount ?? 0)));
+        prods.sort((a,b) => {
+          const aPrice = a.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
+          const bPrice = b.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
+          return aPrice - bPrice;
+        });
+        setProducts(prods);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        toast({ variant: 'destructive', title: 'Erro ao carregar planos', description: 'Não foi possível buscar os planos de assinatura. Tente novamente mais tarde.'});
+      } finally {
+        setIsLoadingProducts(false);
+      }
     }
-    fetchProducts();
-  }, []);
+    // We fetch products once the user's status is known.
+    if (!isUserLoading) {
+      fetchProducts();
+    }
+  }, [isUserLoading, toast]);
+  
+  useEffect(() => {
+    if (searchParams.get('plan_success')) {
+        toast({
+            title: "Assinatura Ativada!",
+            description: "Seu plano foi atualizado com sucesso.",
+        });
+        router.replace('/profile/edit', { scroll: false });
+    }
+  }, [router, toast]);
+
 
   const handleCheckout = async (priceId: string) => {
     if (!user) {
@@ -135,119 +148,60 @@ export default function PlansPage() {
     if (!price) return { text: 'Indisponível', disabled: true, variant: 'secondary' as 'secondary' };
 
     if (!user) {
-        return { text: 'Assinar Agora', disabled: false, variant: product.metadata?.isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
+        return { text: 'Assinar Agora', disabled: false, variant: product.metadata?.isFeatured === 'true' ? 'default' : 'outline' as 'default' | 'outline' };
     }
     
     if (user.subscription?.product?.id === product.id) {
         return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as 'secondary' };
     }
     
-    return { text: 'Fazer Upgrade', disabled: false, variant: product.metadata?.isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
+    return { text: 'Fazer Upgrade', disabled: false, variant: product.metadata?.isFeatured === 'true' ? 'default' : 'outline' as 'default' | 'outline' };
   };
 
   const isLoading = isUserLoading || isLoadingProducts;
   const displayableProducts = products.filter(p => p.prices.some(price => price.type === 'recurring'));
 
-  const renderContent = () => {
-    if (isLoading) {
-      return Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
-      ));
-    }
+  const renderPlanCard = (plan: any, isStatic = false) => {
+    const priceInfo = plan.prices.find((p: any) => p.recurring);
+    const buttonState = isStatic ? { text: 'Assinar Agora', disabled: true, variant: plan.metadata?.isFeatured === 'true' ? 'default' : 'outline' as 'default' | 'outline' } : getButtonState(plan);
+    const priceId = isStatic ? '' : priceInfo.id;
+    const isFeatured = plan.metadata?.isFeatured === 'true';
 
-    if (displayableProducts.length > 0) {
-      return displayableProducts.map((product) => {
-        const buttonState = getButtonState(product);
-        const price = product.prices.find(p => p.type === 'recurring')!;
-
-        return (
-          <Card key={product.id} className={`flex flex-col ${product.metadata?.isFeatured ? 'border-primary shadow-lg' : ''}`}>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">{product.name}</CardTitle>
-              <CardDescription>{product.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <div className="text-center mb-6">
-                <span className="text-4xl font-bold">
-                  {(price.unit_amount! / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </span>
-                {price.recurring && <span className="text-muted-foreground">/{price.recurring.interval}</span>}
-              </div>
-              <ul className="space-y-3">
-                {(product.metadata?.features ?? '').split(',').map((feature: string) => (
-                  <li key={feature} className="flex items-start">
-                    <Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" />
-                    <span className="text-sm text-foreground/90">{feature.trim()}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full" 
-                size="lg" 
-                variant={buttonState.variant} 
-                disabled={buttonState.disabled || !!isRedirecting}
-                onClick={() => handleCheckout(price.id)}
-              >
-                {isRedirecting === price.id && <LoaderCircle className="animate-spin mr-2" />}
-                {isRedirecting === price.id ? 'Aguarde...' : buttonState.text}
-              </Button>
-            </CardFooter>
-          </Card>
-        );
-      });
-    }
-
-    // Static fallback / guide
     return (
-      <>
-        {staticPlans.map((plan) => (
-          <Card key={plan.id} className={`flex flex-col ${plan.isFeatured ? 'border-primary shadow-lg' : ''}`}>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">{plan.name}</CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <div className="text-center mb-6">
-                <span className="text-4xl font-bold">
-                  R$ {plan.price}
-                </span>
-                <span className="text-muted-foreground">/mês</span>
-              </div>
-              <ul className="space-y-3">
-                {plan.features.map((feature: string) => (
-                  <li key={feature} className="flex items-start">
-                    <Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" />
-                    <span className="text-sm text-foreground/90">{feature.trim()}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" size="lg" variant={plan.isFeatured ? 'default' : 'outline'} disabled>
-                Assinar Agora
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-        <Card className="md:col-span-3">
-            <CardHeader>
-                <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <CardTitle className="text-2xl text-center">Nenhum Plano Ativo Encontrado</CardTitle>
-                <CardDescription className="text-center">
-                    Os planos acima são um exemplo. Para ativar os pagamentos, siga os passos abaixo.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="text-left space-y-3 max-w-md mx-auto">
-                <p>1. Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel do Stripe</a>.</p>
-                <p>2. Crie os produtos para cada plano (ex: "Plano Profissional").</p>
-                <p>3. Adicione um preço a cada produto, garantindo que seja <strong>Recorrente</strong>.</p>
-                <p>4. Em "Metadados", adicione a chave `firebaseRole` com o valor correspondente (ex: `profissional`).</p>
-                <p>5. Após salvar, a extensão do Stripe irá sincronizar os dados e os planos aparecerão aqui.</p>
-            </CardContent>
-        </Card>
-      </>
+      <Card key={plan.id} className={`flex flex-col ${isFeatured ? 'border-primary shadow-lg' : ''}`}>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">{plan.name}</CardTitle>
+          <CardDescription>{plan.description}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <div className="text-center mb-6">
+            <span className="text-4xl font-bold">
+              {(priceInfo.unit_amount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </span>
+            <span className="text-muted-foreground">/{priceInfo.recurring?.interval === 'month' ? 'mês' : 'ano'}</span>
+          </div>
+          <ul className="space-y-3">
+            {(plan.metadata?.features ?? '').split(',').map((feature: string) => (
+              <li key={feature} className="flex items-start">
+                <Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" />
+                <span className="text-sm text-foreground/90">{feature.trim()}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            className="w-full" 
+            size="lg" 
+            variant={buttonState.variant} 
+            disabled={buttonState.disabled || !!isRedirecting}
+            onClick={() => handleCheckout(priceId)}
+          >
+            {isRedirecting === priceId && <LoaderCircle className="animate-spin mr-2" />}
+            {isRedirecting === priceId ? 'Aguarde...' : buttonState.text}
+          </Button>
+        </CardFooter>
+      </Card>
     );
   };
 
@@ -272,7 +226,33 @@ export default function PlansPage() {
         </Alert>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-          {renderContent()}
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
+            ))
+          ) : displayableProducts.length > 0 ? (
+            displayableProducts.map((product) => renderPlanCard(product))
+          ) : (
+            <>
+              {staticPlans.map((plan) => renderPlanCard(plan, true))}
+              <Card className="md:col-span-3">
+                  <CardHeader>
+                      <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                      <CardTitle className="text-2xl text-center">Nenhum Plano Ativo Encontrado</CardTitle>
+                      <CardDescription className="text-center">
+                          Os planos acima são um exemplo. Para ativar os pagamentos, siga os passos abaixo.
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-left space-y-3 max-w-md mx-auto">
+                      <p>1. Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel do Stripe</a>.</p>
+                      <p>2. Crie os produtos para cada plano (ex: "Plano Profissional").</p>
+                      <p>3. Adicione um preço a cada produto, garantindo que seja <strong>Recorrente</strong>.</p>
+                      <p>4. Em "Metadados", adicione a chave `firebaseRole` com o valor correspondente (ex: `profissional`).</p>
+                      <p>5. Após salvar, a extensão do Stripe irá sincronizar os dados e os planos aparecerão aqui.</p>
+                  </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         <Card className="max-w-6xl mx-auto mt-12 text-center">
