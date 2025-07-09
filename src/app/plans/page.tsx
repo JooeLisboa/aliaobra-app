@@ -282,7 +282,9 @@ export default function PlansPage() {
               <Info className="h-4 w-4" />
               <AlertTitle>Aguardando Sincronização com o Stripe</AlertTitle>
               <AlertDescription>
-                Os planos acima são exemplos. Seus planos reais, criados no painel do Stripe, aparecerão aqui em breve. Se demorar muito, verifique a configuração dos seus <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks</a>.
+                Seus planos criados no painel do Stripe ainda não apareceram. Isso geralmente acontece por um atraso na comunicação ou um problema com os Webhooks. 
+                <br/><br/>
+                **Ação Recomendada:** Verifique seus <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks no Stripe</a> para garantir que os eventos (`product.created`, `price.created`, etc) estão sendo enviados corretamente.
               </AlertDescription>
             </Alert>
         )}
