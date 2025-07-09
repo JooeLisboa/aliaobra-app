@@ -18,40 +18,6 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// This static data structure now matches the StripeProduct type for consistency.
-const staticPlans = [
-  {
-    id: 'static-basico',
-    name: 'Básico',
-    description: 'Para quem está começando e quer ter uma presença na plataforma.',
-    prices: [{ unit_amount: 597, recurring: { interval: 'month' } }],
-    metadata: {
-      isFeatured: 'false',
-      features: 'Criação de perfil completo,Visibilidade na busca de profissionais,Recebimento de contatos diretos',
-    },
-  },
-  {
-    id: 'static-profissional',
-    name: 'Profissional',
-    description: 'Ideal para profissionais que buscam ativamente por novos trabalhos.',
-    prices: [{ unit_amount: 2997, recurring: { interval: 'month' } }],
-    metadata: {
-      isFeatured: 'true',
-      features: 'Todos os benefícios do Básico,Envio de propostas para serviços,Perfil com destaque nos resultados,Selo de Assinante no perfil',
-    },
-  },
-  {
-    id: 'static-agencia',
-    name: 'Agência',
-    description: 'Para empresas e equipes que gerenciam múltiplos profissionais.',
-    prices: [{ unit_amount: 6997, recurring: { interval: 'month' } }],
-    metadata: {
-      isFeatured: 'false',
-      features: 'Todos os benefícios do Profissional,Gerenciamento de até 5 perfis,Painel de controle para a agência,Suporte prioritário',
-    },
-  },
-];
-
 
 export default function PlansPage() {
   const { user, isLoading: isUserLoading } = useUser();
@@ -162,27 +128,28 @@ export default function PlansPage() {
   const isLoading = isUserLoading || isLoadingProducts;
   const displayableProducts = products.filter(p => p.prices.some(price => price.type === 'recurring'));
 
-  const renderPlanCard = (plan: any, isStatic = false) => {
-    const priceInfo = plan.prices.find((p: any) => p.recurring);
-    const buttonState = isStatic ? { text: 'Assinar Agora', disabled: true, variant: plan.metadata?.isFeatured === 'true' ? 'default' : 'outline' as 'default' | 'outline' } : getButtonState(plan);
-    const priceId = isStatic ? '' : priceInfo.id;
-    const isFeatured = plan.metadata?.isFeatured === 'true';
+  const renderPlanCard = (product: StripeProduct) => {
+    const priceInfo = product.prices.find((p) => p.recurring);
+    const buttonState = getButtonState(product);
+    // It's safe to assume priceInfo and its id exist due to `displayableProducts` filter
+    const priceId = priceInfo!.id; 
+    const isFeatured = product.metadata?.isFeatured === 'true';
 
     return (
-      <Card key={plan.id} className={`flex flex-col ${isFeatured ? 'border-primary shadow-lg' : ''}`}>
+      <Card key={product.id} className={`flex flex-col ${isFeatured ? 'border-primary shadow-lg' : ''}`}>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">{plan.name}</CardTitle>
-          <CardDescription>{plan.description}</CardDescription>
+          <CardTitle className="text-2xl">{product.name}</CardTitle>
+          <CardDescription>{product.description}</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow">
           <div className="text-center mb-6">
             <span className="text-4xl font-bold">
-              {(priceInfo.unit_amount / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {((priceInfo!.unit_amount ?? 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
-            <span className="text-muted-foreground">/{priceInfo.recurring?.interval === 'month' ? 'mês' : 'ano'}</span>
+            <span className="text-muted-foreground">/{priceInfo!.recurring?.interval === 'month' ? 'mês' : 'ano'}</span>
           </div>
           <ul className="space-y-3">
-            {(plan.metadata?.features ?? '').split(',').map((feature: string) => (
+            {(product.metadata?.features ?? '').split(',').map((feature: string) => (
               <li key={feature} className="flex items-start">
                 <Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" />
                 <span className="text-sm text-foreground/90">{feature.trim()}</span>
@@ -217,27 +184,34 @@ export default function PlansPage() {
       return displayableProducts.map((product) => renderPlanCard(product));
     }
 
-    // Fallback content when no products are found
+    // Fallback content when no products are found from Stripe
     return (
-      <>
-        {staticPlans.map((plan) => renderPlanCard(plan, true))}
-        <Card className="md:col-span-3">
-          <CardHeader>
-            <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <CardTitle className="text-2xl text-center">Nenhum Plano Ativo Encontrado</CardTitle>
-            <CardDescription className="text-center">
-              Os planos acima são um exemplo. Para ativar os pagamentos, siga os passos abaixo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-left space-y-3 max-w-md mx-auto">
-            <p>1. Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel do Stripe</a>.</p>
-            <p>2. Crie os produtos para cada plano (ex: "Plano Profissional").</p>
-            <p>3. Adicione um preço a cada produto, garantindo que seja <strong>Recorrente</strong>.</p>
-            <p>4. Em "Metadados", adicione a chave `firebaseRole` com o valor correspondente (ex: `profissional`).</p>
-            <p>5. Após salvar, a extensão do Stripe irá sincronizar os dados e os planos aparecerão aqui.</p>
-          </CardContent>
-        </Card>
-      </>
+      <Card className="md:col-span-3">
+        <CardHeader>
+          <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <CardTitle className="text-2xl text-center">Nenhum Plano Ativo Encontrado</CardTitle>
+          <CardDescription className="text-center">
+            Ainda não há planos de assinatura configurados ou sincronizados do Stripe.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-left space-y-4 max-w-lg mx-auto">
+          <p className="font-semibold text-center text-foreground">Siga estes passos para ativar os pagamentos:</p>
+          <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+            <li>Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel de Produtos no Stripe</a>.</li>
+            <li>Crie seus produtos (Básico, Profissional, Agência).</li>
+            <li>Para cada produto, adicione um preço <strong>recorrente</strong> em BRL.</li>
+            <li>Na seção "Metadados" de cada produto, adicione a chave <code>firebaseRole</code> com o valor correspondente (e.g., <code>profissional</code>).</li>
+            <li>Verifique se os <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks</a> estão configurados para enviar eventos ao Firebase.</li>
+          </ol>
+           <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Aguarde a Sincronização</AlertTitle>
+              <AlertDescription>
+                Após salvar no Stripe, pode levar alguns minutos para os planos aparecerem aqui.
+              </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     );
   };
 
