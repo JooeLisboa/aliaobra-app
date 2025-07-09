@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Info, LoaderCircle, PackageSearch, Users, Star, ArrowRight } from 'lucide-react';
+import { Check, Info, LoaderCircle, Users, Star, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,7 +47,6 @@ export default function PlansPage() {
         setIsLoadingProducts(false);
       }
     }
-    // We fetch products once the user's status is known.
     if (!isUserLoading) {
       fetchProducts();
     }
@@ -131,7 +130,7 @@ export default function PlansPage() {
   const renderPlanCard = (product: StripeProduct) => {
     const priceInfo = product.prices.find((p) => p.recurring);
     const buttonState = getButtonState(product);
-    // It's safe to assume priceInfo and its id exist due to `displayableProducts` filter
+    // It's safe to assume priceInfo and its id exist due to 'displayableProducts' filter
     const priceId = priceInfo!.id; 
     const isFeatured = product.metadata?.isFeatured === 'true';
 
@@ -172,7 +171,7 @@ export default function PlansPage() {
       </Card>
     );
   };
-  
+
   const renderContent = () => {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
@@ -183,37 +182,76 @@ export default function PlansPage() {
     if (displayableProducts.length > 0) {
       return displayableProducts.map((product) => renderPlanCard(product));
     }
-
-    // Fallback content when no products are found from Stripe
+    
+    // Fallback content when no products are found from Stripe, showing placeholders.
     return (
-      <Card className="md:col-span-3">
-        <CardHeader>
-          <PackageSearch className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <CardTitle className="text-2xl text-center">Nenhum Plano Ativo Encontrado</CardTitle>
-          <CardDescription className="text-center">
-            Ainda não há planos de assinatura configurados ou sincronizados do Stripe.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-left space-y-4 max-w-lg mx-auto">
-          <p className="font-semibold text-center text-foreground">Siga estes passos para ativar os pagamentos:</p>
-          <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-            <li>Acesse seu <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Painel de Produtos no Stripe</a>.</li>
-            <li>Crie seus produtos (Básico, Profissional, Agência).</li>
-            <li>Para cada produto, adicione um preço <strong>recorrente</strong> em BRL.</li>
-            <li>Na seção "Metadados" de cada produto, adicione a chave <code>firebaseRole</code> com o valor correspondente (e.g., <code>profissional</code>).</li>
-            <li>Verifique se os <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks</a> estão configurados para enviar eventos ao Firebase.</li>
-          </ol>
-           <Alert>
-              <Info className="h-4 w-4" />
-              <AlertTitle>Aguarde a Sincronização</AlertTitle>
-              <AlertDescription>
-                Após salvar no Stripe, pode levar alguns minutos para os planos aparecerem aqui.
-              </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <>
+        <Card className="flex flex-col">
+            <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Plano Básico</CardTitle>
+                <CardDescription>Visibilidade na plataforma e perfil público.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+                <div className="text-center mb-6">
+                    <span className="text-4xl font-bold">R$ 5,97</span>
+                    <span className="text-muted-foreground">/mês</span>
+                </div>
+                <ul className="space-y-3">
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Perfil público na plataforma</span></li>
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Receber avaliações de clientes</span></li>
+                </ul>
+            </CardContent>
+            <CardFooter>
+                <Button className="w-full" size="lg" variant="outline" disabled>Sincronizando...</Button>
+            </CardFooter>
+        </Card>
+
+        <Card className="flex flex-col border-primary shadow-lg">
+            <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Plano Profissional</CardTitle>
+                <CardDescription>Destaque na busca e envio de propostas.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+                <div className="text-center mb-6">
+                    <span className="text-4xl font-bold">R$ 29,97</span>
+                    <span className="text-muted-foreground">/mês</span>
+                </div>
+                <ul className="space-y-3">
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Todos os benefícios do Básico</span></li>
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Envio de propostas para serviços</span></li>
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Selo de Assinante no perfil</span></li>
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Melhor posicionamento nas buscas</span></li>
+                </ul>
+            </CardContent>
+            <CardFooter>
+                <Button className="w-full" size="lg" disabled>Sincronizando...</Button>
+            </CardFooter>
+        </Card>
+
+        <Card className="flex flex-col">
+            <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Plano Agência</CardTitle>
+                <CardDescription>Gerenciamento de múltiplos profissionais.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+                <div className="text-center mb-6">
+                    <span className="text-4xl font-bold">R$ 69,97</span>
+                    <span className="text-muted-foreground">/mês</span>
+                </div>
+                <ul className="space-y-3">
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Todos os benefícios do Profissional</span></li>
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Gerenciamento de até 5 profissionais</span></li>
+                    <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Perfil de agência destacado</span></li>
+                </ul>
+            </CardContent>
+            <CardFooter>
+                <Button className="w-full" size="lg" variant="outline" disabled>Sincronizando...</Button>
+            </CardFooter>
+        </Card>
+      </>
     );
   };
+
 
   return (
     <TooltipProvider>
@@ -238,6 +276,16 @@ export default function PlansPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
           {renderContent()}
         </div>
+        
+        {displayableProducts.length === 0 && !isLoading && (
+             <Alert className="max-w-4xl mx-auto mt-12">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Aguardando Sincronização com o Stripe</AlertTitle>
+              <AlertDescription>
+                Os planos acima são exemplos. Seus planos reais, criados no painel do Stripe, aparecerão aqui em breve. Se demorar muito, verifique a configuração dos seus <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks</a>.
+              </AlertDescription>
+            </Alert>
+        )}
 
         <Card className="max-w-6xl mx-auto mt-12 text-center">
           <CardHeader>
