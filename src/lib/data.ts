@@ -1,5 +1,5 @@
 import { db, areCredsAvailable } from './firebase';
-import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
 import type { Provider, Service, Proposal, StripeProduct, StripePrice } from './types';
 
 const planOrder: Record<string, number> = {
@@ -122,15 +122,18 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
 
     try {
         const productsRef = collection(db, 'products');
-        const productsQuery = query(productsRef, where('active', '==', true));
+        const productsQuery = query(productsRef, where('active', '==', true), orderBy('metadata.order', 'asc'));
         const querySnapshot = await getDocs(productsQuery);
         
         const products: StripeProduct[] = [];
 
         for (const productDoc of querySnapshot.docs) {
             const productData = { id: productDoc.id, ...productDoc.data() } as StripeProduct;
-            productData.prices = [];
+            if (!productData.metadata || !productData.metadata.firebaseRole) {
+              continue; // Skip products without the required metadata
+            }
 
+            productData.prices = [];
             const pricesRef = collection(productDoc.ref, 'prices');
             const pricesQuery = query(pricesRef, where('active', '==', true));
             const priceSnap = await getDocs(pricesQuery);
@@ -138,7 +141,10 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
             priceSnap.forEach(priceDoc => {
                  productData.prices.push({ id: priceDoc.id, ...priceDoc.data() } as StripePrice);
             });
-            products.push(productData);
+            
+            if (productData.prices.length > 0) {
+              products.push(productData);
+            }
         }
         return products;
 

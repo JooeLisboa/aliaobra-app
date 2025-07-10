@@ -33,12 +33,6 @@ export default function PlansPage() {
       try {
         setIsLoadingProducts(true);
         const prods = await getActiveProductsWithPrices();
-        prods.forEach(p => p.prices.sort((a,b) => (a.unit_amount ?? 0) - (b.unit_amount ?? 0)));
-        prods.sort((a,b) => {
-          const aPrice = a.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
-          const bPrice = b.prices.find(p => p.type === 'recurring')?.unit_amount ?? Infinity;
-          return aPrice - bPrice;
-        });
         setProducts(prods);
       } catch (error) {
         console.error("Failed to fetch products:", error);
@@ -65,7 +59,8 @@ export default function PlansPage() {
 
   const handleCheckout = async (priceId: string) => {
     if (!user) {
-      router.push(`/signup?plan=${products.find(p => p.prices.some(pr => pr.id === priceId))?.id}`);
+      const product = products.find(p => p.prices.some(pr => pr.id === priceId));
+      router.push(`/signup?plan=${product?.metadata?.firebaseRole || ''}`);
       return;
     }
     if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
@@ -112,25 +107,30 @@ export default function PlansPage() {
   const getButtonState = (product: StripeProduct) => {
     const price = product.prices.find(p => p.type === 'recurring');
     if (!price) return { text: 'Indisponível', disabled: true, variant: 'secondary' as 'secondary' };
+    
+    const isFeatured = product.metadata?.firebaseRole === 'profissional';
 
     if (!user) {
-        return { text: 'Assinar Agora', disabled: false, variant: product.metadata?.firebaseRole === 'profissional' ? 'default' : 'outline' as 'default' | 'outline' };
+        return { text: 'Assinar Agora', disabled: false, variant: isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
     }
     
     if (user.subscription?.product?.id === product.id) {
         return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as 'secondary' };
     }
     
-    return { text: 'Fazer Upgrade', disabled: false, variant: product.metadata?.firebaseRole === 'profissional' ? 'default' : 'outline' as 'default' | 'outline' };
+    return { text: 'Fazer Upgrade', disabled: false, variant: isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
   };
 
   const isLoading = isUserLoading || isLoadingProducts;
-  const displayableProducts = products.filter(p => p.prices.some(price => price.type === 'recurring'));
+  const displayableProducts = products
+    .filter(p => p.prices.some(price => price.type === 'recurring'))
+    .sort((a,b) => (a.metadata?.order ?? 99) - (b.metadata?.order ?? 99));
 
   const renderPlanCard = (product: StripeProduct) => {
     const priceInfo = product.prices.find((p) => p.recurring);
+    if (!priceInfo) return null;
+
     const buttonState = getButtonState(product);
-    const priceId = priceInfo!.id; 
     const isFeatured = product.metadata?.firebaseRole === 'profissional';
 
     return (
@@ -142,9 +142,9 @@ export default function PlansPage() {
         <CardContent className="flex-grow">
           <div className="text-center mb-6">
             <span className="text-4xl font-bold">
-              {((priceInfo!.unit_amount ?? 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {((priceInfo.unit_amount ?? 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
-            <span className="text-muted-foreground">/{priceInfo!.recurring?.interval === 'month' ? 'mês' : 'ano'}</span>
+            <span className="text-muted-foreground">/{priceInfo.recurring?.interval === 'month' ? 'mês' : 'ano'}</span>
           </div>
           <ul className="space-y-3">
             {(product.metadata?.features ?? '').split(',').map((feature: string) => (
@@ -161,10 +161,10 @@ export default function PlansPage() {
             size="lg" 
             variant={buttonState.variant} 
             disabled={buttonState.disabled || !!isRedirecting}
-            onClick={() => handleCheckout(priceId)}
+            onClick={() => handleCheckout(priceInfo.id)}
           >
-            {isRedirecting === priceId && <LoaderCircle className="animate-spin mr-2" />}
-            {isRedirecting === priceId ? 'Aguarde...' : buttonState.text}
+            {isRedirecting === priceInfo.id && <LoaderCircle className="animate-spin mr-2" />}
+            {isRedirecting === priceInfo.id ? 'Aguarde...' : buttonState.text}
           </Button>
         </CardFooter>
       </Card>
@@ -175,15 +175,23 @@ export default function PlansPage() {
     <div className="md:col-span-2 lg:col-span-3">
         <Alert className="max-w-4xl mx-auto mt-12">
             <Info className="h-4 w-4" />
-            <AlertTitle>Planos não encontrados no banco de dados</AlertTitle>
+            <AlertTitle>Nenhum Plano Ativo Encontrado</AlertTitle>
             <AlertDescription>
-                <p>O aplicativo não encontrou os produtos do Stripe na coleção do Firestore. Isso geralmente acontece por uma falha na comunicação (Webhooks).</p>
+                <p>Ainda não há planos de assinatura configurados ou sincronizados do Stripe.</p>
+                <p className="mt-2 font-semibold">O problema mais comum é a configuração dos Webhooks do Stripe.</p>
                 <br/>
                 <p><strong>Ação Recomendada:</strong></p>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li>Verifique se os eventos <strong>product.created</strong> e <strong>price.created</strong> estão ativos no seu <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhook do Stripe</a>.</li>
-                     <li>Após confirmar os webhooks, edite a descrição de um produto no Stripe para forçar a sincronização.</li>
-                     <li>Você pode também tentar reenviar eventos passados na página de <a href="https://dashboard.stripe.com/events" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Eventos do Stripe</a>.</li>
+                    <li>
+                      Certifique-se de que os eventos <strong>product.created/updated</strong> e <strong>price.created/updated</strong> estão ativos no seu <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhook do Stripe</a>.
+                    </li>
+                    <li>
+                      Em cada produto do Stripe, na seção "Metadados", adicione a chave `firebaseRole` com o valor correspondente (e.g., `profissional`).
+                    </li>
+                    <li>Após salvar, pode levar alguns minutos para os planos aparecerem. Você pode forçar a sincronização editando a descrição de um produto no Stripe.</li>
+                    <li>
+                      Você também pode tentar reenviar eventos passados na página de <a href="https://dashboard.stripe.com/events" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Eventos do Stripe</a>.
+                    </li>
                 </ul>
             </AlertDescription>
         </Alert>

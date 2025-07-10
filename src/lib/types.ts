@@ -1,4 +1,5 @@
 
+
 import type { User as FirebaseAuthUser } from 'firebase/auth';
 import type { DocumentReference } from 'firebase/firestore';
 
@@ -77,8 +78,9 @@ export type StripeProduct = {
   images: string[];
   prices: StripePrice[];
   metadata?: {
-    isFeatured?: string;
+    firebaseRole: 'basico' | 'profissional' | 'agencia';
     features?: string;
+    order?: number;
     [key: string]: any;
   }
   [key:string]: any;
