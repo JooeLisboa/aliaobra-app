@@ -81,6 +81,7 @@ function PremiumSearchContent() {
         success_url: `${window.location.origin}/premium-search?session_id={CHECKOUT_SESSION_ID}&description=${encodeURIComponent(values.projectDescription)}`,
         cancel_url: `${window.location.origin}/premium-search`,
         allow_promotion_codes: true,
+        payment_method_types: ['card', 'pix'],
       });
 
       onSnapshot(docRef, async (snap) => {
