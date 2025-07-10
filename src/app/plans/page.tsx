@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Info, LoaderCircle, Users, Star, ArrowRight } from 'lucide-react';
+import { Check, Info, LoaderCircle, Users, Star, ArrowRight, ServerCrash } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +17,7 @@ import { addDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getWebhookInfo } from '@/lib/debug-actions';
 
 
 export default function PlansPage() {
@@ -24,9 +25,20 @@ export default function PlansPage() {
   const [products, setProducts] = useState<StripeProduct[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
+  const [webhookInfo, setWebhookInfo] = useState<{url: string; secret?: string} | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    async function fetchWebhookInfo() {
+      const info = await getWebhookInfo();
+      if (info) {
+        setWebhookInfo(info);
+      }
+    }
+    fetchWebhookInfo();
+  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -215,6 +227,28 @@ export default function PlansPage() {
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-12">
+        
+        {webhookInfo && (
+          <Alert variant="default" className="max-w-4xl mx-auto mb-12 bg-yellow-50 border-yellow-200">
+            <ServerCrash className="h-4 w-4 text-yellow-600" />
+            <AlertTitle className="text-yellow-800 font-bold">Informação do Webhook (Apenas para Depuração)</AlertTitle>
+            <AlertDescription className="text-yellow-700">
+              <p>Use este URL para criar seu endpoint de webhook no painel do Stripe. Após a configuração, este card pode ser removido.</p>
+              <p className="font-mono bg-yellow-100 p-2 rounded-md mt-2 break-all text-xs">
+                {webhookInfo.url}
+              </p>
+               {webhookInfo.secret && (
+                 <>
+                    <p className="mt-2">Se a extensão pedir por um "Webhook Secret", use este valor:</p>
+                    <p className="font-mono bg-yellow-100 p-2 rounded-md mt-2 break-all text-xs">
+                        {webhookInfo.secret}
+                    </p>
+                 </>
+               )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
             Escolha o Plano Certo para Você
@@ -260,3 +294,5 @@ export default function PlansPage() {
     </TooltipProvider>
   );
 }
+
+    
