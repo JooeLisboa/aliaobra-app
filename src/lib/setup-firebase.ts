@@ -1,6 +1,8 @@
 
+'use server';
+
 import { execSync } from 'child_process';
-import { writeFileSync, readFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 // This script is meant to be run from the root of the project.
@@ -67,16 +69,22 @@ function setupFirebase() {
 
     // Get the web app config from Firebase using the specific App ID
     console.log(`Fetching Firebase web app configuration for App ID ${webAppId}...`);
+    // Pass the trimmed webAppId to the command
     const configResult = execSync(`firebase apps:sdkconfig WEB ${webAppId} --project ${projectId}`, { encoding: 'utf-8' });
     
     // A robust way to parse the JSON output from the command
-    const jsonMatch = configResult.match(/{\s*"firebase":\s*{[\s\S]*?}\s*}/);
+    const jsonMatch = configResult.match(/{[\s\S]*}/);
     if (!jsonMatch || !jsonMatch[0]) {
       throw new Error("Could not parse the Firebase config JSON from the CLI output.");
     }
     
-    const configObject = JSON.parse(jsonMatch[0]);
-    const firebaseConfig = configObject.firebase || configObject;
+    // The command might return a wrapping object, so we look for the config inside.
+    const parsedJson = JSON.parse(jsonMatch[0]);
+    const firebaseConfig = parsedJson.result?.sdkConfig || parsedJson.sdkConfig || parsedJson;
+
+    if (!firebaseConfig.apiKey) {
+      throw new Error("Parsed JSON does not contain a valid Firebase config with an apiKey.");
+    }
 
 
     // Path to the .env file in the project root
