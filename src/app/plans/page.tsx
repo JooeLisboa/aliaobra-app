@@ -65,7 +65,7 @@ export default function PlansPage() {
 
   const handleCheckout = async (priceId: string) => {
     if (!user) {
-      router.push(`/signup?redirect=/plans`);
+      router.push(`/signup?plan=${products.find(p => p.prices.some(pr => pr.id === priceId))?.id}`);
       return;
     }
     if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
@@ -130,7 +130,6 @@ export default function PlansPage() {
   const renderPlanCard = (product: StripeProduct) => {
     const priceInfo = product.prices.find((p) => p.recurring);
     const buttonState = getButtonState(product);
-    // It's safe to assume priceInfo and its id exist due to 'displayableProducts' filter
     const priceId = priceInfo!.id; 
     const isFeatured = product.metadata?.isFeatured === 'true';
 
@@ -173,70 +172,17 @@ export default function PlansPage() {
   };
   
   const renderFallbackContent = () => (
-    <>
-      <Card className="flex flex-col">
-          <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Plano Básico</CardTitle>
-              <CardDescription>Visibilidade na plataforma e perfil público.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-              <div className="text-center mb-6">
-                  <span className="text-4xl font-bold">R$ 5,97</span>
-                  <span className="text-muted-foreground">/mês</span>
-              </div>
-              <ul className="space-y-3">
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Perfil público na plataforma</span></li>
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Receber avaliações de clientes</span></li>
-              </ul>
-          </CardContent>
-          <CardFooter>
-              <Button className="w-full" size="lg" variant="outline" disabled>Sincronizando...</Button>
-          </CardFooter>
-      </Card>
-
-      <Card className="flex flex-col border-primary shadow-lg">
-          <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Plano Profissional</CardTitle>
-              <CardDescription>Destaque na busca e envio de propostas.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-              <div className="text-center mb-6">
-                  <span className="text-4xl font-bold">R$ 29,97</span>
-                  <span className="text-muted-foreground">/mês</span>
-              </div>
-              <ul className="space-y-3">
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Todos os benefícios do Básico</span></li>
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Envio de propostas para serviços</span></li>
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Selo de Assinante no perfil</span></li>
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Melhor posicionamento nas buscas</span></li>
-              </ul>
-          </CardContent>
-          <CardFooter>
-              <Button className="w-full" size="lg" disabled>Sincronizando...</Button>
-          </CardFooter>
-      </Card>
-
-      <Card className="flex flex-col">
-          <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Plano Agência</CardTitle>
-              <CardDescription>Gerenciamento de múltiplos profissionais.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-              <div className="text-center mb-6">
-                  <span className="text-4xl font-bold">R$ 69,97</span>
-                  <span className="text-muted-foreground">/mês</span>
-              </div>
-              <ul className="space-y-3">
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Todos os benefícios do Profissional</span></li>
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Gerenciamento de até 5 profissionais</span></li>
-                  <li className="flex items-start"><Check className="w-5 h-5 text-green-500 mr-2 shrink-0 mt-1" /><span>Perfil de agência destacado</span></li>
-              </ul>
-          </CardContent>
-          <CardFooter>
-              <Button className="w-full" size="lg" variant="outline" disabled>Sincronizando...</Button>
-          </CardFooter>
-      </Card>
-    </>
+    <div className="md:col-span-2 lg:col-span-3">
+        <Alert className="max-w-4xl mx-auto mt-12">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Aguardando Sincronização com o Stripe</AlertTitle>
+            <AlertDescription>
+                <p>Seus planos criados no painel do Stripe ainda não apareceram. Isso pode levar alguns minutos ou indicar um problema com a configuração dos Webhooks.</p>
+                <br/>
+                <p><strong>Ação Recomendada:</strong> Verifique seus <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks no Stripe</a> para garantir que os eventos (`product.created`, `price.created`, etc) estão sendo enviados corretamente para o Firebase.</p>
+            </AlertDescription>
+        </Alert>
+    </div>
   );
 
   const renderContent = () => {
@@ -277,18 +223,6 @@ export default function PlansPage() {
           {renderContent()}
         </div>
         
-        {displayableProducts.length === 0 && !isLoading && (
-             <Alert className="max-w-4xl mx-auto mt-12">
-              <Info className="h-4 w-4" />
-              <AlertTitle>Aguardando Sincronização com o Stripe</AlertTitle>
-              <AlertDescription>
-                Seus planos criados no painel do Stripe ainda não apareceram. Isso pode levar alguns minutos ou indicar um problema com a configuração dos Webhooks.
-                <br/><br/>
-                **Ação Recomendada:** Verifique seus <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks no Stripe</a> para garantir que os eventos (`product.created`, `price.created`, etc) estão sendo enviados corretamente.
-              </AlertDescription>
-            </Alert>
-        )}
-
         <Card className="max-w-6xl mx-auto mt-12 text-center">
           <CardHeader>
              <CardTitle className="text-2xl flex items-center justify-center gap-3">
