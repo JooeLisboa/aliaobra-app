@@ -78,10 +78,10 @@ function PremiumSearchContent() {
       const docRef = await addDoc(checkoutSessionRef, {
         price: PREMIUM_SEARCH_PRICE_ID,
         mode: 'payment', // Specify 'payment' for one-time purchases
-        success_url: `${window.location.origin}/premium-search?session_id={CHECKOUT_SESSION_ID}&description=${encodeURIComponent(values.projectDescription)}`,
+        success_url: `${window.location.origin}/premium-search-result?description=${encodeURIComponent(values.projectDescription)}`,
         cancel_url: `${window.location.origin}/premium-search`,
         allow_promotion_codes: true,
-        payment_method_types: ['card', 'pix'],
+        payment_method_types: ['card'],
       });
 
       onSnapshot(docRef, async (snap) => {
