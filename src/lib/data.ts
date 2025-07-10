@@ -3,9 +3,9 @@ import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebas
 import type { Provider, Service, Proposal, StripeProduct, StripePrice } from './types';
 
 const planOrder: Record<string, number> = {
-  'Agência': 0,
-  'Profissional': 1,
-  'Básico': 2,
+  'agencia': 0,
+  'profissional': 1,
+  'basico': 2,
 };
 
 export async function getProviders(): Promise<Provider[]> {
@@ -21,7 +21,11 @@ export async function getProviders(): Promise<Provider[]> {
     providerList.sort((a, b) => {
         const planA = a.plan || 'Básico';
         const planB = b.plan || 'Básico';
-        return (planOrder[planA] ?? 99) - (planOrder[planB] ?? 99);
+        
+        const planRoleA = Object.keys(planOrder).find(key => planOrder[key as keyof typeof planOrder] === (a.plan ? ['Agência', 'Profissional', 'Básico'].indexOf(a.plan) : 2)) || 'basico';
+        const planRoleB = Object.keys(planOrder).find(key => planOrder[key as keyof typeof planOrder] === (b.plan ? ['Agência', 'Profissional', 'Básico'].indexOf(b.plan) : 2)) || 'basico';
+
+        return (planOrder[planRoleA] ?? 99) - (planOrder[planRoleB] ?? 99);
     });
 
     return providerList;
@@ -122,30 +126,37 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
 
     try {
         const productsRef = collection(db, 'products');
-        const productsQuery = query(productsRef, where('active', '==', true), orderBy('metadata.order', 'asc'));
+        const productsQuery = query(productsRef, where('active', '==', true));
         const querySnapshot = await getDocs(productsQuery);
         
         const products: StripeProduct[] = [];
 
         for (const productDoc of querySnapshot.docs) {
             const productData = { id: productDoc.id, ...productDoc.data() } as StripeProduct;
+            
+            // Skip products that don't have the required metadata. This is the key check.
             if (!productData.metadata || !productData.metadata.firebaseRole) {
-              continue; // Skip products without the required metadata
+              continue;
             }
 
-            productData.prices = [];
             const pricesRef = collection(productDoc.ref, 'prices');
             const pricesQuery = query(pricesRef, where('active', '==', true));
             const priceSnap = await getDocs(pricesQuery);
 
-            priceSnap.forEach(priceDoc => {
-                 productData.prices.push({ id: priceDoc.id, ...priceDoc.data() } as StripePrice);
-            });
+            productData.prices = priceSnap.docs.map(priceDoc => ({ id: priceDoc.id, ...priceDoc.data() } as StripePrice));
             
             if (productData.prices.length > 0) {
               products.push(productData);
             }
         }
+        
+        // Sort the valid products based on the order defined in `planOrder`
+        products.sort((a, b) => {
+            const orderA = planOrder[a.metadata.firebaseRole as keyof typeof planOrder] ?? 99;
+            const orderB = planOrder[b.metadata.firebaseRole as keyof typeof planOrder] ?? 99;
+            return orderA - orderB;
+        });
+
         return products;
 
     } catch (error) {

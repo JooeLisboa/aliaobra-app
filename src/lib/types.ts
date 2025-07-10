@@ -77,7 +77,7 @@ export type StripeProduct = {
   description: string | null;
   images: string[];
   prices: StripePrice[];
-  metadata?: {
+  metadata: {
     firebaseRole: 'basico' | 'profissional' | 'agencia';
     features?: string;
     order?: number;
