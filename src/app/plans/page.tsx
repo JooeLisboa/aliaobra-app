@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Info, LoaderCircle, Users, Star, ArrowRight, ServerCrash } from 'lucide-react';
+import { Check, Info, LoaderCircle, Users, Star, ArrowRight, ServerCrash, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,28 +17,17 @@ import { addDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getWebhookInfo } from '@/lib/debug-actions';
-
+import Image from 'next/image';
 
 export default function PlansPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const [products, setProducts] = useState<StripeProduct[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
-  const [webhookInfo, setWebhookInfo] = useState<{url: string; secret?: string} | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  useEffect(() => {
-    async function fetchWebhookInfo() {
-      const info = await getWebhookInfo();
-      if (info) {
-        setWebhookInfo(info);
-      }
-    }
-    fetchWebhookInfo();
-  }, []);
+  const [showDebugCard, setShowDebugCard] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -46,6 +35,10 @@ export default function PlansPage() {
         setIsLoadingProducts(true);
         const prods = await getActiveProductsWithPrices();
         setProducts(prods);
+        // Se encontrarmos produtos, o webhook provavelmente está funcionando, então podemos ocultar o card de depuração.
+        if (prods.length > 0) {
+            setShowDebugCard(false);
+        }
       } catch (error) {
         console.error("Failed to fetch products:", error);
         toast({ variant: 'destructive', title: 'Erro ao carregar planos', description: 'Não foi possível buscar os planos de assinatura. Tente novamente mais tarde.'});
@@ -134,9 +127,7 @@ export default function PlansPage() {
   };
 
   const isLoading = isUserLoading || isLoadingProducts;
-  const displayableProducts = products
-    .filter(p => p.prices.some(price => price.type === 'recurring'))
-    .sort((a,b) => (a.metadata?.order ?? 99) - (b.metadata?.order ?? 99));
+  const displayableProducts = products;
 
   const renderPlanCard = (product: StripeProduct) => {
     const priceInfo = product.prices.find((p) => p.recurring);
@@ -185,28 +176,33 @@ export default function PlansPage() {
   
   const renderFallbackContent = () => (
     <div className="md:col-span-2 lg:col-span-3">
-        <Alert className="max-w-4xl mx-auto mt-12">
-            <Info className="h-4 w-4" />
-            <AlertTitle>Nenhum Plano Ativo Encontrado</AlertTitle>
-            <AlertDescription>
-                <p>Ainda não há planos de assinatura configurados ou sincronizados do Stripe.</p>
-                <p className="mt-2 font-semibold">O problema mais comum é a configuração dos Webhooks do Stripe.</p>
-                <br/>
-                <p><strong>Ação Recomendada:</strong></p>
-                <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li>
-                      Certifique-se de que os eventos <strong>product.created/updated</strong> e <strong>price.created/updated</strong> estão ativos no seu <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhook do Stripe</a>.
-                    </li>
-                    <li>
-                      Em cada produto do Stripe, na seção "Metadados", adicione a chave `firebaseRole` com o valor correspondente (e.g., `profissional`).
-                    </li>
-                    <li>Após salvar, pode levar alguns minutos para os planos aparecerem. Você pode forçar a sincronização editando a descrição de um produto no Stripe.</li>
-                    <li>
-                      Você também pode tentar reenviar eventos passados na página de <a href="https://dashboard.stripe.com/events" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Eventos do Stripe</a>.
-                    </li>
-                </ul>
-            </AlertDescription>
-        </Alert>
+        {showDebugCard ? (
+            <Alert variant="default" className="max-w-4xl mx-auto mt-12 bg-yellow-50 border-yellow-200">
+                <ServerCrash className="h-4 w-4 text-yellow-600" />
+                <AlertTitle className="text-yellow-800 font-bold">Guia Rápido: Como Encontrar seu URL de Webhook</AlertTitle>
+                <AlertDescription className="text-yellow-700 space-y-4">
+                    <p>Seus planos não estão aparecendo porque a comunicação entre o Stripe e o Firebase (via webhook) provavelmente não está configurada. Siga estes passos para encontrar o URL correto:</p>
+                    <ol className="list-decimal list-inside space-y-2">
+                        <li>Acesse o <a href={`https://console.firebase.google.com/project/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/extensions`} target="_blank" rel="noopener noreferrer" className="font-bold underline">Console do Firebase</a> e vá para a página de **Extensões**.</li>
+                        <li>Clique em **"Gerenciar"** na sua extensão "Run Payments with Stripe".</li>
+                        <li>Na seção **"Recursos criados"**, você encontrará o URL do webhook.</li>
+                        <li>Use esse URL para criar um novo endpoint no seu <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="font-bold underline">Painel de Webhooks do Stripe</a>.</li>
+                    </ol>
+                    <div className="p-2 bg-yellow-100 rounded-md">
+                        <Image src="https://storage.googleapis.com/static.aifor.dev/serviopro/webhook_location_firebase.png" alt="Onde encontrar o URL do Webhook no console do Firebase" width={600} height={200} className="rounded-md" />
+                    </div>
+                </AlertDescription>
+            </Alert>
+        ) : (
+            <Alert className="max-w-4xl mx-auto mt-12">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Nenhum Plano Ativo Encontrado</AlertTitle>
+                <AlertDescription>
+                    <p>Verifique se você criou produtos com preços ativos no seu painel do Stripe.</p>
+                    <p className="mt-2">Lembre-se de adicionar o metadado `firebaseRole` em cada produto para que eles sejam sincronizados corretamente.</p>
+                </AlertDescription>
+            </Alert>
+        )}
     </div>
   );
 
@@ -227,28 +223,6 @@ export default function PlansPage() {
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-12">
-        
-        {webhookInfo && (
-          <Alert variant="default" className="max-w-4xl mx-auto mb-12 bg-yellow-50 border-yellow-200">
-            <ServerCrash className="h-4 w-4 text-yellow-600" />
-            <AlertTitle className="text-yellow-800 font-bold">Informação do Webhook (Apenas para Depuração)</AlertTitle>
-            <AlertDescription className="text-yellow-700">
-              <p>Use este URL para criar seu endpoint de webhook no painel do Stripe. Após a configuração, este card pode ser removido.</p>
-              <p className="font-mono bg-yellow-100 p-2 rounded-md mt-2 break-all text-xs">
-                {webhookInfo.url}
-              </p>
-               {webhookInfo.secret && (
-                 <>
-                    <p className="mt-2">Se a extensão pedir por um "Webhook Secret", use este valor:</p>
-                    <p className="font-mono bg-yellow-100 p-2 rounded-md mt-2 break-all text-xs">
-                        {webhookInfo.secret}
-                    </p>
-                 </>
-               )}
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
             Escolha o Plano Certo para Você
@@ -294,5 +268,3 @@ export default function PlansPage() {
     </TooltipProvider>
   );
 }
-
-    
