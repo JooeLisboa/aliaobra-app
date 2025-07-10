@@ -1,5 +1,3 @@
-
-
 import type { User as FirebaseAuthUser } from 'firebase/auth';
 import type { DocumentReference } from 'firebase/firestore';
 
@@ -78,7 +76,7 @@ export type StripeProduct = {
   images: string[];
   prices: StripePrice[];
   metadata: {
-    firebaseRole: 'basico' | 'profissional' | 'agencia';
+    firebaseRole: 'básico' | 'profissional' | 'agencia';
     features?: string;
     order?: number;
     [key: string]: any;
@@ -89,62 +87,12 @@ export type StripeProduct = {
 export type StripeSubscription = {
   id: string;
   status: 'active' | 'trialing' | 'incomplete' | 'past_due' | 'canceled' | 'unpaid';
-  product: DocumentReference<StripeProduct>;
+  // The product property can be a reference or the full object after resolution
+  product: DocumentReference<StripeProduct> | StripeProduct;
   [key: string]: any;
 };
 
 export type AppUser = FirebaseAuthUser & {
   profile?: Provider | UserProfile;
   subscription?: StripeSubscription | null;
-};
-
-
-export type ChatMessage = {
-  id: string;
-  senderId: string;
-  text: string;
-  timestamp: number;
-};
-
-export type Chat = {
-  id: string;
-  participantIds: string[];
-  participantInfo: {
-    [key: string]: {
-      name: string;
-      avatarUrl: string;
-    };
-  };
-  lastMessage?: {
-    text: string;
-    timestamp: number;
-    senderId: string;
-  };
-  updatedAt: number;
-};
-
-export type Proposal = {
-  id: string;
-  providerId: string;
-  providerName: string;
-  providerAvatarUrl: string;
-  amount: number;
-  message: string;
-  createdAt: number;
-  status: 'pending' | 'accepted' | 'declined';
-};
-
-export type Service = {
-  id: string;
-  clientId: string;
-  clientName: string;
-  title: string;
-  description: string;
-  category: string;
-  budget: number;
-  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
-  createdAt: number;
-  assignedProviderId?: string;
-  acceptedProposalId?: string;
-  acceptedProposalAmount?: number;
 };

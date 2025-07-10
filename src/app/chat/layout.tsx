@@ -6,22 +6,30 @@ import { useUser } from '@/hooks/use-user';
 import { getUserChats } from '@/lib/chat-actions';
 import type { Chat } from '@/lib/types';
 import { ChatSidebar } from '@/components/chat-sidebar';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Info } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading: isUserLoading } = useUser();
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
     if (user) {
       setIsLoading(true);
+      setError(null);
       getUserChats(user.uid).then(userChats => {
         setChats(userChats);
+      }).catch(err => {
+        console.error("Failed to load chats:", err);
+        setError("Não foi possível carregar suas conversas. Tente novamente mais tarde.");
+      }).finally(() => {
         setIsLoading(false);
       });
     } else if (!isUserLoading) {
@@ -72,6 +80,14 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
                <div className="flex items-center justify-center h-full p-4">
                   <LoaderCircle className="w-8 h-8 animate-spin" />
                </div>
+             ) : error ? (
+                <Alert variant="destructive" className="m-4">
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Erro ao Carregar</AlertTitle>
+                  <AlertDescription>
+                    {error}
+                  </AlertDescription>
+                </Alert>
              ) : (
                <ChatSidebar chats={chats} currentUserId={user.uid} />
              )}

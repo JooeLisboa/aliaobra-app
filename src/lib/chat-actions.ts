@@ -13,6 +13,7 @@ import {
   getDocs,
   Timestamp,
   writeBatch,
+  orderBy,
 } from 'firebase/firestore';
 import { db, areCredsAvailable } from '@/lib/firebase';
 import type { Chat, Provider, UserProfile } from '@/lib/types';
@@ -62,7 +63,6 @@ export async function startChat(formData: FormData) {
     const chatDoc = await getDoc(chatRef);
 
     if (!chatDoc.exists()) {
-      // SECURITY: Fetch client and provider profiles from the server to prevent impersonation.
       const provider = await getProvider(providerId);
       if (!provider) {
         return { success: false, error: 'Provedor não encontrado.' };
@@ -77,7 +77,6 @@ export async function startChat(formData: FormData) {
           const userSnap = await getDoc(doc(db, 'users', clientId));
           if (userSnap.exists()) {
               const data = userSnap.data() as UserProfile;
-              // Clients don't have avatars in their profile, so we use a placeholder.
               clientProfile = { name: data.name, avatarUrl: `https://placehold.co/100x100.png` };
           }
       }
@@ -135,7 +134,6 @@ export async function sendMessageInChat(formData: FormData) {
   const chatRef = doc(db, 'chats', chatId);
   
   try {
-    // Security Check: Ensure the sender is a participant of the chat
     const chatDoc = await getDoc(chatRef);
     if (!chatDoc.exists() || !chatDoc.data().participantIds?.includes(senderId)) {
         return { success: false, error: 'Acesso negado. Você não faz parte desta conversa.' };
@@ -169,12 +167,9 @@ export async function sendMessageInChat(formData: FormData) {
 export async function getUserChats(userId: string): Promise<Chat[]> {
   if (!areCredsAvailable || !db) return [];
   
-  // The composite index required by orderBy() is not available in this environment.
-  // We remove the orderBy clause from the query and sort the results in memory instead.
   const chatsQuery = query(
     collection(db, 'chats'),
     where('participantIds', 'array-contains', userId)
-    // orderBy('updatedAt', 'desc') // This line is removed to prevent the index error.
   );
 
   const querySnapshot = await getDocs(chatsQuery);
@@ -188,8 +183,7 @@ export async function getUserChats(userId: string): Promise<Chat[]> {
       return { id: doc.id, ...data } as Chat
   });
   
-  // Sort the chats in memory by the 'updatedAt' timestamp in descending order.
-  chats.sort((a, b) => b.updatedAt - a.updatedAt);
+  chats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
   return chats;
 }

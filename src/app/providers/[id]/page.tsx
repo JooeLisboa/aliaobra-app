@@ -67,7 +67,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
 
     setIsSendingMessage(true);
     formData.append('providerId', providerData.id);
-    // SECURITY: Pass only the client's ID. The server action will fetch the user's profile info.
     formData.append('clientId', user.uid);
     
     const result = await startChat(formData);
@@ -89,7 +88,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     setIsSendingMessage(false);
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -101,7 +99,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     );
   }
 
-  // Not found state
   if (!providerData) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -116,6 +113,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   
   const isOwner = user && user.uid === providerData.id;
   const isAgency = providerData.type === 'agency';
+  const isClient = user && (user.profile?.userType === 'client' || !user.profile);
 
   const agencyPortfolio: PortfolioItem[] = isAgency
     ? managedProviders.flatMap(p => p.portfolio)
@@ -179,7 +177,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   </div>
                 
                   <div className="flex flex-col gap-2 pt-4 border-t">
-                    <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar</Button>
+                    {isClient && <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar</Button>}
                     <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
                       <DialogTrigger asChild>
                           {user && !isOwner ? (

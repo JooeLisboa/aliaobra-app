@@ -98,7 +98,7 @@ export default function PlansPage() {
   
   const getButtonState = (product: StripeProduct) => {
     const price = product.prices.find(p => p.type === 'recurring');
-    if (!price) return { text: 'Indisponível', disabled: true, variant: 'secondary' as 'secondary' };
+    if (!price) return { text: 'Indisponível', disabled: true, variant: 'secondary' as const };
     
     const isFeatured = product.metadata?.firebaseRole === 'profissional';
     const buttonVariant = isFeatured ? 'default' : 'outline' as 'default' | 'outline';
@@ -111,8 +111,9 @@ export default function PlansPage() {
         return { text: 'Assinar Agora', disabled: false, variant: buttonVariant };
     }
     
-    if (user.subscription?.product?.id === product.id) {
-        return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as 'secondary' };
+    const isCurrentPlan = user.subscription?.product && 'id' in user.subscription.product ? user.subscription.product.id === product.id : false;
+    if (isCurrentPlan) {
+        return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as const };
     }
     
     return { text: 'Fazer Upgrade', disabled: false, variant: buttonVariant };

@@ -20,9 +20,12 @@ import { auth } from '@/lib/firebase';
 import { createUserProfile } from '@/lib/auth-actions';
 import { Wrench, LoaderCircle } from "lucide-react";
 
+// Basic validation for CPF/CNPJ format
+const cpfCnpjRegex = /(^\d{3}\.\d{3}\.\d{3}-\d{2}$)|(^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$)|(^\d{11}$)|(^\d{14}$)/;
+
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: 'Nome completo deve ter no mínimo 3 caracteres.' }),
-  cpfCnpj: z.string().min(11, { message: 'CPF/CNPJ deve ter no mínimo 11 caracteres.' }).max(18, { message: 'CPF/CNPJ inválido.' }),
+  cpfCnpj: z.string().regex(cpfCnpjRegex, { message: 'CPF ou CNPJ inválido.' }),
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
   password: z.string().min(6, { message: 'A senha deve ter no mínimo 6 caracteres.' }),
   userType: z.enum(['client', 'provider', 'agency'], { required_error: 'Por favor, selecione um objetivo.'}),
@@ -144,7 +147,7 @@ export default function SignupPage() {
                     <FormItem className="grid gap-2">
                       <Label htmlFor="cpf">CPF ou CNPJ</Label>
                       <FormControl>
-                        <Input id="cpf" placeholder="000.000.000-00" {...field} disabled={isLoading} />
+                        <Input id="cpf" placeholder="000.000.000-00 ou 00.000.000/0000-00" {...field} disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -2,65 +2,76 @@
 'use server';
 
 import { doc, setDoc } from 'firebase/firestore';
-import { db, areCredsAvailable } from '@/lib/firebase';
-import type { Provider } from '@/lib/types';
+import { db, areCredsAvailable, getFirebaseAdmin } from '@/lib/firebase';
+import type { Provider, UserProfile } from '@/lib/types';
+import { z } from 'zod';
 
-type UserProfileData = {
-  uid: string;
-  email: string;
-  fullName: string;
-  cpfCnpj: string;
-  userType: 'client' | 'provider' | 'agency';
-  plan?: string;
-};
+const userProfileSchema = z.object({
+  uid: z.string().min(1, "UID is required."),
+  email: z.string().email("Invalid email format."),
+  fullName: z.string().min(3, "Full name must be at least 3 characters."),
+  cpfCnpj: z.string().min(11, "CPF/CNPJ is required."),
+  userType: z.enum(['client', 'provider', 'agency']),
+  plan: z.string().optional(),
+});
 
-export async function createUserProfile(data: UserProfileData) {
+export async function createUserProfile(data: z.infer<typeof userProfileSchema>) {
   if (!areCredsAvailable || !db) {
     return { success: false, error: 'A configuração do Firebase está incompleta. Contate o suporte.' };
   }
-  try {
-    // If they are a provider or agency, create a profile in the 'providers' collection
-    if (data.userType === 'provider' || data.userType === 'agency') {
-       const providerDocRef = doc(db, 'providers', data.uid);
-       
-       const planName = data.plan || 'básico';
+  
+  const validation = userProfileSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, error: "Validation failed: " + validation.error.flatten().fieldErrors };
+  }
+  
+  const { uid, email, fullName, cpfCnpj, userType, plan } = validation.data;
 
-       // Create a default provider profile by casting a partial object to Provider
-       const newProvider: Provider = {
-           id: data.uid,
-           name: data.fullName,
+  try {
+    const { auth } = getFirebaseAdmin();
+    // Use Firebase Admin to set a custom claim. This is more secure than relying on a userType field in Firestore.
+    await auth.setCustomUserClaims(uid, { userType, plan: plan || 'básico' });
+
+    // If they are a provider or agency, create a profile in the 'providers' collection
+    if (userType === 'provider' || userType === 'agency') {
+       const providerDocRef = doc(db, 'providers', uid);
+       
+       const planName = plan || 'básico';
+
+       const newProvider: Omit<Provider, 'id'> = {
+           name: fullName,
            category: 'Não especificada',
            location: 'Não informada',
            avatarUrl: `https://placehold.co/100x100.png`,
            rating: 0,
            reviewCount: 0,
-           bio: `Perfil de ${data.fullName}.`,
+           bio: `Perfil de ${fullName}.`,
            skills: [],
            status: 'Disponível',
            portfolio: [],
            reviews: [],
            isVerified: false,
-           type: data.userType === 'provider' ? 'individual' : 'agency',
+           type: userType === 'provider' ? 'individual' : 'agency',
            plan: planName as Provider['plan'],
        };
 
        await setDoc(providerDocRef, newProvider);
     } else {
       // For clients, create a document in a 'users' collection
-      const userDocRef = doc(db, 'users', data.uid);
-      await setDoc(userDocRef, {
-        uid: data.uid,
-        email: data.email,
-        name: data.fullName,
-        cpfCnpj: data.cpfCnpj,
-        userType: data.userType,
+      const userDocRef = doc(db, 'users', uid);
+      const newClientProfile: Omit<UserProfile, 'uid'> = {
+        email: email,
+        name: fullName,
+        cpfCnpj: cpfCnpj,
+        userType: userType,
         createdAt: new Date(),
-      });
+      };
+      await setDoc(userDocRef, newClientProfile);
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error creating user profile in Firestore: ", error);
+    console.error("Error creating user profile: ", error);
     return { success: false, error: `Não foi possível criar o perfil no banco de dados: ${error.message}` };
   }
 }
