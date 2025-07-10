@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Info, LoaderCircle, Users, Star, ArrowRight, ServerCrash, ExternalLink } from 'lucide-react';
+import { Check, Info, LoaderCircle, Users, Star, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,8 +16,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { addDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function PlansPage() {
   const { user, isLoading: isUserLoading } = useUser();
@@ -26,14 +25,12 @@ export default function PlansPage() {
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setIsLoadingProducts(true);
         const prods = await getActiveProductsWithPrices();
-        // Filter out the 'basico' plan from the display
         const displayableProds = prods.filter(p => p.metadata?.firebaseRole !== 'basico');
         setProducts(displayableProds);
       } catch (error) {
@@ -43,10 +40,8 @@ export default function PlansPage() {
         setIsLoadingProducts(false);
       }
     }
-    if (!isUserLoading) {
-      fetchProducts();
-    }
-  }, [isUserLoading, toast]);
+    fetchProducts();
+  }, [toast]);
   
   const handleCheckout = async (priceId: string) => {
     if (!user) {
@@ -100,19 +95,22 @@ export default function PlansPage() {
     if (!price) return { text: 'Indisponível', disabled: true, variant: 'secondary' as 'secondary' };
     
     const isFeatured = product.metadata?.firebaseRole === 'profissional';
+    const buttonVariant = isFeatured ? 'default' : 'outline' as 'default' | 'outline';
+
+    if (isUserLoading) {
+      return { text: 'Carregando...', disabled: true, variant: buttonVariant };
+    }
 
     if (!user) {
-        return { text: 'Assinar Agora', disabled: false, variant: isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
+        return { text: 'Assinar Agora', disabled: false, variant: buttonVariant };
     }
     
     if (user.subscription?.product?.id === product.id) {
         return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as 'secondary' };
     }
     
-    return { text: 'Fazer Upgrade', disabled: false, variant: isFeatured ? 'default' : 'outline' as 'default' | 'outline' };
+    return { text: 'Fazer Upgrade', disabled: false, variant: buttonVariant };
   };
-
-  const isLoading = isUserLoading || isLoadingProducts;
 
   const renderPlanCard = (product: StripeProduct) => {
     const priceInfo = product.prices.find((p) => p.recurring);
@@ -120,6 +118,7 @@ export default function PlansPage() {
 
     const buttonState = getButtonState(product);
     const isFeatured = product.metadata?.firebaseRole === 'profissional';
+    const isRedirectingThisPlan = isRedirecting === priceInfo.id;
 
     return (
       <Card key={product.id} className={`flex flex-col ${isFeatured ? 'border-primary shadow-lg' : ''}`}>
@@ -151,8 +150,8 @@ export default function PlansPage() {
             disabled={buttonState.disabled || !!isRedirecting}
             onClick={() => handleCheckout(priceInfo.id)}
           >
-            {isRedirecting === priceInfo.id && <LoaderCircle className="animate-spin mr-2" />}
-            {isRedirecting === priceInfo.id ? 'Aguarde...' : buttonState.text}
+            {isRedirectingThisPlan && <LoaderCircle className="animate-spin mr-2" />}
+            {isRedirectingThisPlan ? 'Aguarde...' : buttonState.text}
           </Button>
         </CardFooter>
       </Card>
@@ -174,7 +173,7 @@ export default function PlansPage() {
   );
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoadingProducts) {
       return Array.from({ length: 2 }).map((_, i) => (
         <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
       ));
