@@ -7,7 +7,7 @@ import { resolve } from 'path';
 
 // This script is meant to be run from the root of the project.
 // It fetches Firebase configuration and populates the .env file.
-// Usage: npx tsx src/lib/setup-firebase.ts
+// Usage: npm run setup:firebase
 
 function setupFirebase() {
   console.log('Attempting to configure Firebase environment variables...');
@@ -39,6 +39,10 @@ function setupFirebase() {
       projectId = useOutput.split('\n').pop()!.trim();
     }
     
+    if (!projectId) {
+      throw new Error("Could not determine the active Firebase project ID from the command output.");
+    }
+    
     console.log(`Detected Firebase project: ${projectId}`);
   } catch (error) {
     console.error('Error: Could not determine the active Firebase project.');
@@ -47,45 +51,34 @@ function setupFirebase() {
   }
 
   try {
-    // List all apps to find a web app
+    // List all apps using the --json flag for reliable parsing
     console.log(`Listing Firebase apps for project ${projectId}...`);
-    const appsListOutput = execSync(`firebase apps:list --project ${projectId}`, { encoding: 'utf-8' });
-    const webAppLine = appsListOutput.split('\n').find(line => line.includes(' WEB '));
+    const appsListOutput = execSync(`firebase apps:list --json --project ${projectId}`, { encoding: 'utf-8' });
+    const appsResult = JSON.parse(appsListOutput);
+    
+    if (!appsResult || !appsResult.result || !Array.isArray(appsResult.result)) {
+        throw new Error('Could not parse the list of Firebase apps. The format might have changed.');
+    }
 
-    if (!webAppLine) {
+    const webApp = appsResult.result.find((app: any) => app.platform === 'WEB');
+
+    if (!webApp || !webApp.appId) {
         throw new Error('No WEB app found in the Firebase project. Please create one in the Firebase console.');
     }
     
-    // Extract App ID from the table-like output by splitting and trimming
-    const columns = webAppLine.split('│').map(col => col.trim());
-    // CORRECTED: App ID is in the 3rd column (index 2), not the 2nd.
-    const webAppId = columns.length > 2 ? columns[2] : ''; 
-
-    if (!webAppId || !webAppId.includes(':web:')) {
-        throw new Error(`Could not reliably extract the Web App ID. Parsed line: "${webAppLine}"`);
-    }
-
+    const webAppId = webApp.appId.trim();
     console.log(`Found Web App with ID: ${webAppId}`);
 
     // Get the web app config from Firebase using the specific App ID
     console.log(`Fetching Firebase web app configuration for App ID ${webAppId}...`);
-    // Pass the trimmed webAppId to the command
-    const configResult = execSync(`firebase apps:sdkconfig WEB ${webAppId} --project ${projectId}`, { encoding: 'utf-8' });
+    const configResultJson = execSync(`firebase apps:sdkconfig WEB ${webAppId} --json --project ${projectId}`, { encoding: 'utf-8' });
     
-    // A robust way to parse the JSON output from the command
-    const jsonMatch = configResult.match(/{[\s\S]*}/);
-    if (!jsonMatch || !jsonMatch[0]) {
-      throw new Error("Could not parse the Firebase config JSON from the CLI output.");
-    }
-    
-    // The command might return a wrapping object, so we look for the config inside.
-    const parsedJson = JSON.parse(jsonMatch[0]);
-    const firebaseConfig = parsedJson.result?.sdkConfig || parsedJson.sdkConfig || parsedJson;
+    const parsedConfig = JSON.parse(configResultJson);
+    const firebaseConfig = parsedConfig.result?.sdkConfig;
 
-    if (!firebaseConfig.apiKey) {
-      throw new Error("Parsed JSON does not contain a valid Firebase config with an apiKey.");
+    if (!firebaseConfig || !firebaseConfig.apiKey) {
+      throw new Error("Could not parse the Firebase config JSON from the CLI output. The 'sdkConfig' property was not found.");
     }
-
 
     // Path to the .env file in the project root
     const envPath = resolve(process.cwd(), '.env');
@@ -103,13 +96,17 @@ function setupFirebase() {
       ``, // Add a newline for readability
       `# Stripe configuration - Add your keys below`,
       `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=`,
+      ``,
+      `# Google GenAI configuration - Add your keys below`,
+      `GOOGLE_API_KEY=`,
+
     ].join('\n');
     
     writeFileSync(envPath, envContent);
 
     console.log('\n✅ Success! Firebase environment variables have been written to .env');
     console.log('Next steps:');
-    console.log('1. Add your Stripe Publishable Key to the .env file.');
+    console.log('1. Add your Stripe Publishable Key and Google API Key to the .env file.');
     console.log('2. Restart your development server for the changes to take effect.');
     
   } catch (error) {
