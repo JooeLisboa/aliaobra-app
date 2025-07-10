@@ -49,7 +49,7 @@ export type Provider = {
   reviews: Review[];
   type: 'individual' | 'agency';
   isVerified: boolean;
-  plan: 'Básico' | 'Profissional' | 'Agência';
+  plan: 'básico' | 'profissional' | 'agência';
   // For agencies
   managedProviderIds?: string[];
   // For individuals belonging to an agency

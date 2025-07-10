@@ -14,11 +14,6 @@ type UserProfileData = {
   plan?: string;
 };
 
-function capitalize(str: string) {
-    if (!str) return str;
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
 export async function createUserProfile(data: UserProfileData) {
   if (!areCredsAvailable || !db) {
     return { success: false, error: 'A configuração do Firebase está incompleta. Contate o suporte.' };
@@ -28,7 +23,7 @@ export async function createUserProfile(data: UserProfileData) {
     if (data.userType === 'provider' || data.userType === 'agency') {
        const providerDocRef = doc(db, 'providers', data.uid);
        
-       const planName = data.plan ? capitalize(data.plan) : 'Básico';
+       const planName = data.plan || 'básico';
 
        // Create a default provider profile by casting a partial object to Provider
        const newProvider: Provider = {

@@ -42,15 +42,15 @@ export function PlanIcon({ plan, className }: { plan?: Provider['plan'], classNa
     if (!plan) return null;
 
     const iconMap = {
-        'Básico': {
+        'básico': {
             icon: <PlasticHelmet className={className} />,
             tooltip: 'Plano Básico',
         },
-        'Profissional': {
+        'profissional': {
             icon: <GoldHelmet className={className} />,
             tooltip: 'Assinante: Plano Profissional',
         },
-        'Agência': {
+        'agência': {
             icon: <EmeraldHelmet className={className} />,
             tooltip: 'Assinante: Plano Agência',
         },
