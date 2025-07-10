@@ -25,10 +25,13 @@ function setupFirebase() {
   try {
     // Get the current Firebase project ID
     console.log('Getting current Firebase project ID...');
-    projectId = execSync('firebase use', { encoding: 'utf-8' }).trim();
-    if (!projectId || projectId.includes('No active project')) {
+    const useOutput = execSync('firebase use', { encoding: 'utf-8' }).trim();
+     if (!useOutput || useOutput.includes('No active project')) {
         throw new Error("No active Firebase project is selected.");
     }
+    const match = useOutput.match(/Active Project: ([\w-]+)/);
+    projectId = match ? match[1] : useOutput;
+    
     console.log(`Detected Firebase project: ${projectId}`);
   } catch (error) {
     console.error('Error: Could not determine the active Firebase project.');
@@ -37,14 +40,30 @@ function setupFirebase() {
   }
 
   try {
-    // Get the web app config from Firebase
-    console.log(`Fetching Firebase web app configuration for project ${projectId}...`);
-    const configResult = execSync(`firebase apps:sdkconfig WEB --project ${projectId}`, { encoding: 'utf-8' });
+    // List all apps to find a web app
+    console.log(`Listing Firebase apps for project ${projectId}...`);
+    const appsListOutput = execSync(`firebase apps:list --project ${projectId}`, { encoding: 'utf-8' });
+    const webAppLine = appsListOutput.split('\n').find(line => line.includes('WEB'));
+
+    if (!webAppLine) {
+        throw new Error('No WEB app found in the Firebase project. Please create one in the Firebase console.');
+    }
     
-    // Extract the JSON part from the output
+    // Extract App ID from the table-like output
+    const appIdMatch = webAppLine.match(/\s(\S+)$/);
+    if (!appIdMatch || !appIdMatch[1]) {
+        throw new Error('Could not extract the App ID from the app list.');
+    }
+    const webAppId = appIdMatch[1];
+    console.log(`Found Web App with ID: ${webAppId}`);
+
+    // Get the web app config from Firebase using the specific App ID
+    console.log(`Fetching Firebase web app configuration for App ID ${webAppId}...`);
+    const configResult = execSync(`firebase apps:sdkconfig WEB ${webAppId} --project ${projectId}`, { encoding: 'utf-8' });
+    
     const jsonMatch = configResult.match(/{\s*"firebase":\s*{[\s\S]*?}\s*}/);
     if (!jsonMatch) {
-      throw new Error("Could not parse Firebase config. Make sure you have a Web App in your Firebase project.");
+      throw new Error("Could not parse the Firebase config for the specified app.");
     }
 
     const firebaseConfig = JSON.parse(jsonMatch[0]).firebase;
