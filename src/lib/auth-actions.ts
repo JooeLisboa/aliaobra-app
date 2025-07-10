@@ -7,9 +7,8 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin';
 import type { Provider, UserProfile } from '@/lib/types';
 import { z } from 'zod';
 
-// Basic validation for CPF/CNPJ format
-const cpfCnpjRegex = /(^\d{3}\.\d{3}\.\d{3}-\d{2}$)|(^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$)|(^\d{11}$)|(^\d{14}$)/;
-
+// Basic validation for 11 (CPF) or 14 (CNPJ) digits
+const cpfCnpjRegex = /^\d{11}$|^\d{14}$/;
 
 const userProfileSchema = z.object({
   uid: z.string().min(1, "UID is required."),

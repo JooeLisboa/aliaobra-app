@@ -19,12 +19,12 @@ import { auth } from '@/lib/firebase';
 import { createUserProfile } from '@/lib/auth-actions';
 import { Wrench, LoaderCircle } from "lucide-react";
 
-// Basic validation for CPF/CNPJ format
-const cpfCnpjRegex = /^(?:\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{11}|\d{14})$/;
+// Simplified regex to check for 11 (CPF) or 14 (CNPJ) digits, ignoring formatting.
+const cpfCnpjRegex = /^[0-9.-/]{11,18}$/;
 
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: 'Nome completo deve ter no mínimo 3 caracteres.' }),
-  cpfCnpj: z.string().regex(cpfCnpjRegex, { message: 'CPF ou CNPJ inválido. Use apenas números ou o formato com pontuação.' }),
+  cpfCnpj: z.string().regex(cpfCnpjRegex, { message: 'CPF ou CNPJ inválido. Digite apenas os números ou o formato completo.' }),
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
   password: z.string().min(6, { message: 'A senha deve ter no mínimo 6 caracteres.' }),
   userType: z.enum(['client', 'provider', 'agency'], { required_error: 'Por favor, selecione um objetivo.'}),
@@ -73,7 +73,7 @@ export default function SignupPage() {
         uid: user.uid,
         email: user.email!,
         fullName: values.fullName,
-        cpfCnpj: values.cpfCnpj,
+        cpfCnpj: values.cpfCnpj.replace(/[.\-/]/g, ''), // Sanitize before sending
         userType: values.userType,
         plan: plan || undefined,
       });
