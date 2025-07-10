@@ -2,15 +2,20 @@
 'use server';
 
 import { doc, setDoc } from 'firebase/firestore';
-import { db, areCredsAvailable, getFirebaseAdmin } from '@/lib/firebase';
+import { db, areCredsAvailable } from '@/lib/firebase';
+import { getFirebaseAdmin } from '@/lib/firebase-admin';
 import type { Provider, UserProfile } from '@/lib/types';
 import { z } from 'zod';
+
+// Basic validation for CPF/CNPJ format
+const cpfCnpjRegex = /(^\d{3}\.\d{3}\.\d{3}-\d{2}$)|(^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$)|(^\d{11}$)|(^\d{14}$)/;
+
 
 const userProfileSchema = z.object({
   uid: z.string().min(1, "UID is required."),
   email: z.string().email("Invalid email format."),
   fullName: z.string().min(3, "Full name must be at least 3 characters."),
-  cpfCnpj: z.string().min(11, "CPF/CNPJ is required."),
+  cpfCnpj: z.string().regex(cpfCnpjRegex, { message: 'CPF ou CNPJ inválido.' }),
   userType: z.enum(['client', 'provider', 'agency']),
   plan: z.string().optional(),
 });
