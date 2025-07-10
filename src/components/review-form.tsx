@@ -27,8 +27,6 @@ import { Send, Video, FileUp, LoaderCircle, Camera } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser } from '@/hooks/use-user';
 import { addReview } from '@/lib/review-actions';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
 
 const formSchema = z.object({
   rating: z.number().min(1, "A avaliação é obrigatória.").max(5),
@@ -124,6 +122,13 @@ export function ReviewForm({ providerId }: { providerId: string }) {
     }
   };
 
+  const handleTriggerClick = () => {
+    if (!user) {
+      router.push('/login?redirect=' + encodeURIComponent(router.asPath));
+    } else {
+      setOpen(true);
+    }
+  };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -136,7 +141,6 @@ export function ReviewForm({ providerId }: { providerId: string }) {
         rating: values.rating,
         comment: values.comment,
         imageUrl: capturedImage,
-        // SECURITY: Pass only the author's ID. Server will fetch profile details.
         authorId: user.uid,
       });
       if (result.success) {
@@ -151,13 +155,10 @@ export function ReviewForm({ providerId }: { providerId: string }) {
     });
   }
 
-  const triggerButton = (
-    <Button disabled={!user}>Deixar uma avaliação</Button>
-  );
-
   return (
     <>
       <Dialog open={open} onOpenChange={(isOpen) => {
+        if (!user) return; 
         setOpen(isOpen);
         if (!isOpen) {
           form.reset();
@@ -165,20 +166,7 @@ export function ReviewForm({ providerId }: { providerId: string }) {
         }
       }}>
         <DialogTrigger asChild>
-          {user ? (
-            triggerButton
-          ) : (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>{triggerButton}</span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Faça login para deixar uma avaliação.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+           <Button onClick={handleTriggerClick}>Deixar uma avaliação</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>

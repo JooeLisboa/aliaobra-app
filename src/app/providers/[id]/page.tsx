@@ -112,8 +112,8 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   }
   
   const isOwner = user && user.uid === providerData.id;
-  const isAgency = providerData.type === 'agency';
   const isClient = user && (user.profile?.userType === 'client' || !user.profile);
+  const isAgency = providerData.type === 'agency';
 
   const agencyPortfolio: PortfolioItem[] = isAgency
     ? managedProviders.flatMap(p => p.portfolio)
@@ -122,6 +122,12 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const sendMessageTrigger = (
       <Button variant="secondary" className="w-full" size="lg" disabled={!user || isOwner}>
         <MessageSquare className="mr-2"/> Enviar mensagem
+      </Button>
+  );
+
+  const callButtonTrigger = (
+      <Button className="w-full" size="lg" disabled={!user || !isClient}>
+        <Phone className="mr-2"/> Ligar
       </Button>
   );
 
@@ -177,7 +183,19 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   </div>
                 
                   <div className="flex flex-col gap-2 pt-4 border-t">
-                    {isClient && <Button className="w-full" size="lg"><Phone className="mr-2"/> Ligar</Button>}
+                    {!user ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>{callButtonTrigger}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Faça login para ver o contato.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      isClient && callButtonTrigger
+                    )}
+
                     <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
                       <DialogTrigger asChild>
                           {user && !isOwner ? (

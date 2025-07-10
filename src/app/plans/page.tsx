@@ -108,7 +108,7 @@ export default function PlansPage() {
     }
 
     if (!user) {
-        return { text: 'Assinar Agora', disabled: false, variant: buttonVariant };
+        return { text: 'Fazer Login para Assinar', disabled: false, variant: buttonVariant };
     }
     
     const isCurrentPlan = user.subscription?.product && 'id' in user.subscription.product ? user.subscription.product.id === product.id : false;
