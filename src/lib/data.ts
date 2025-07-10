@@ -2,32 +2,16 @@ import { db, areCredsAvailable } from './firebase';
 import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
 import type { Provider, Service, Proposal, StripeProduct, StripePrice } from './types';
 
-const planOrder: Record<string, number> = {
-  'agencia': 0,
-  'profissional': 1,
-  'basico': 2,
-};
-
 export async function getProviders(): Promise<Provider[]> {
   if (!areCredsAvailable || !db) {
     return [];
   }
   try {
     const providersCollection = collection(db, 'providers');
-    const providerSnapshot = await getDocs(providersCollection);
+    const q = query(providersCollection, orderBy('plan', 'asc'));
+    const providerSnapshot = await getDocs(q);
     const providerList = providerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Provider));
     
-    // Sort providers to show subscribers first
-    providerList.sort((a, b) => {
-        const planA = a.plan || 'Básico';
-        const planB = b.plan || 'Básico';
-        
-        const planRoleA = Object.keys(planOrder).find(key => planOrder[key as keyof typeof planOrder] === (a.plan ? ['Agência', 'Profissional', 'Básico'].indexOf(a.plan) : 2)) || 'basico';
-        const planRoleB = Object.keys(planOrder).find(key => planOrder[key as keyof typeof planOrder] === (b.plan ? ['Agência', 'Profissional', 'Básico'].indexOf(b.plan) : 2)) || 'basico';
-
-        return (planOrder[planRoleA] ?? 99) - (planOrder[planRoleB] ?? 99);
-    });
-
     return providerList;
   } catch (error) {
     console.error("Error fetching providers: ", error);
@@ -126,7 +110,8 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
 
     try {
         const productsRef = collection(db, 'products');
-        const productsQuery = query(productsRef, where('active', '==', true));
+        // Order by the 'order' metadata field you can set in Stripe.
+        const productsQuery = query(productsRef, where('active', '==', true), orderBy('metadata.order', 'asc'));
         const querySnapshot = await getDocs(productsQuery);
         
         const products: StripeProduct[] = [];
@@ -134,7 +119,7 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
         for (const productDoc of querySnapshot.docs) {
             const productData = { id: productDoc.id, ...productDoc.data() } as StripeProduct;
             
-            // Skip products that don't have the required metadata. This is the key check.
+            // We still filter to ensure only products with a role are processed.
             if (!productData.metadata || !productData.metadata.firebaseRole) {
               continue;
             }
@@ -150,13 +135,6 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
             }
         }
         
-        // Sort the valid products based on the order defined in `planOrder`
-        products.sort((a, b) => {
-            const orderA = planOrder[a.metadata.firebaseRole as keyof typeof planOrder] ?? 99;
-            const orderB = planOrder[b.metadata.firebaseRole as keyof typeof planOrder] ?? 99;
-            return orderA - orderB;
-        });
-
         return products;
 
     } catch (error) {
