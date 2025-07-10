@@ -30,7 +30,12 @@ function setupFirebase() {
         throw new Error("No active Firebase project is selected.");
     }
     const match = useOutput.match(/Active Project: ([\w-]+)/);
-    projectId = match ? match[1] : useOutput;
+    if (match && match[1]) {
+      projectId = match[1];
+    } else {
+      // Fallback for cases where the output is just the project ID
+      projectId = useOutput.split('\n').pop()!.trim();
+    }
     
     console.log(`Detected Firebase project: ${projectId}`);
   } catch (error) {
@@ -43,18 +48,20 @@ function setupFirebase() {
     // List all apps to find a web app
     console.log(`Listing Firebase apps for project ${projectId}...`);
     const appsListOutput = execSync(`firebase apps:list --project ${projectId}`, { encoding: 'utf-8' });
-    const webAppLine = appsListOutput.split('\n').find(line => line.includes('WEB'));
+    const webAppLine = appsListOutput.split('\n').find(line => line.includes(' WEB '));
 
     if (!webAppLine) {
         throw new Error('No WEB app found in the Firebase project. Please create one in the Firebase console.');
     }
     
-    // Extract App ID from the table-like output
-    const appIdMatch = webAppLine.match(/\s(\S+)$/);
-    if (!appIdMatch || !appIdMatch[1]) {
-        throw new Error('Could not extract the App ID from the app list.');
+    // Extract App ID from the table-like output by splitting and trimming
+    const columns = webAppLine.split('│').map(col => col.trim());
+    const webAppId = columns.length > 2 ? columns[1] : ''; // App ID is typically the second column
+
+    if (!webAppId || !webAppId.includes(':web:')) {
+        throw new Error(`Could not reliably extract the Web App ID. Parsed line: "${webAppLine}"`);
     }
-    const webAppId = appIdMatch[1];
+
     console.log(`Found Web App with ID: ${webAppId}`);
 
     // Get the web app config from Firebase using the specific App ID
