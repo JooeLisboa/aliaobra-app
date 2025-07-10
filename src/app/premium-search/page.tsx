@@ -19,8 +19,7 @@ import { addDoc, collection, onSnapshot, doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 
-// TODO: Replace with your actual Stripe Price ID for the one-time consultation
-const PREMIUM_SEARCH_PRICE_ID = 'price_...'; // COLE SEU ID DO PREÇO DO STRIPE AQUI
+const PREMIUM_SEARCH_PRICE_ID = 'price_1RjLrnEHwQUfCRykWC9qQOh8';
 
 const searchSchema = z.object({
   projectDescription: z.string().min(50, 'Descreva seu projeto com pelo menos 50 caracteres para uma análise precisa.'),
