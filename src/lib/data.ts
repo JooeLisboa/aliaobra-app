@@ -110,7 +110,6 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
 
     try {
         const productsRef = collection(db, 'products');
-        // The orderBy clause was removed from here. It can cause issues if not all documents have the field.
         const productsQuery = query(productsRef, where('active', '==', true));
         const querySnapshot = await getDocs(productsQuery);
         
@@ -124,8 +123,8 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
             }
 
             const pricesRef = collection(productDoc.ref, 'prices');
-            const pricesQuery = query(pricesRef, where('active', '==', true));
-            const priceSnap = await getDocs(pricesQuery);
+            // A condição where('active', '==', true) foi removida dos preços para maior compatibilidade.
+            const priceSnap = await getDocs(pricesRef);
 
             productData.prices = priceSnap.docs.map(priceDoc => ({ id: priceDoc.id, ...priceDoc.data() } as StripePrice));
             
@@ -134,7 +133,6 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
             }
         }
         
-        // We now sort the products here, in the code, which is safer.
         return products.sort((a, b) => (a.metadata.order || 99) - (b.metadata.order || 99));
 
     } catch (error) {
