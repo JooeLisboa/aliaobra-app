@@ -67,7 +67,7 @@ export default function PlansPage() {
             success_url: `${window.location.origin}/profile/edit?plan_success=true`,
             cancel_url: window.location.origin,
             allow_promotion_codes: true,
-            payment_method_types: ['card', 'pix'],
+            payment_method_types: ['card'],
         });
 
         onSnapshot(docRef, async (snap) => {
