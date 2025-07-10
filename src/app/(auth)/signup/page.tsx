@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -34,6 +35,7 @@ export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get('plan');
+  const redirect = searchParams.get('redirect');
 
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -81,10 +83,10 @@ export default function SignupPage() {
 
       toast({
         title: "Conta Criada com Sucesso!",
-        description: "Você será redirecionado para o seu dashboard.",
+        description: "Você será redirecionado.",
       });
 
-      router.push('/dashboard');
+      router.push(redirect || '/dashboard');
 
     } catch (error: any) {
       console.error(error);

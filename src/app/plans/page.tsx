@@ -46,7 +46,11 @@ export default function PlansPage() {
   const handleCheckout = async (priceId: string) => {
     if (!user) {
       const product = products.find(p => p.prices.some(pr => pr.id === priceId));
-      router.push(`/signup?plan=${product?.metadata?.firebaseRole || ''}`);
+      const planName = product?.metadata?.firebaseRole || '';
+      const params = new URLSearchParams();
+      params.set('plan', planName);
+      params.set('redirect', '/plans');
+      router.push(`/login?${params.toString()}`);
       return;
     }
     if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {

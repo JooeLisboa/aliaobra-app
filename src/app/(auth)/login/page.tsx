@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from 'zod';
@@ -26,6 +27,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
+  const plan = searchParams.get('plan');
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -52,10 +56,11 @@ export default function LoginPage() {
       
       toast({
         title: "Login realizado com sucesso!",
-        description: "Você será redirecionado para o seu dashboard.",
+        description: "Você será redirecionado em breve.",
       });
 
-      router.push('/dashboard');
+      // Redirect to the intended page, or dashboard as a fallback
+      router.push(redirect || '/dashboard');
 
     } catch (error: any) {
       console.error(error);
@@ -72,6 +77,15 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   }
+
+  const signupHref = () => {
+    let base = '/signup';
+    const params = new URLSearchParams();
+    if (plan) params.set('plan', plan);
+    if (redirect) params.set('redirect', redirect);
+    const queryString = params.toString();
+    return queryString ? `${base}?${queryString}` : base;
+  };
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] bg-background p-4">
@@ -125,7 +139,7 @@ export default function LoginPage() {
           </Form>
           <div className="mt-4 text-center text-sm">
             Não tem uma conta?{" "}
-            <Link href="/signup" className="underline">
+            <Link href={signupHref()} className="underline">
               Cadastre-se
             </Link>
           </div>
