@@ -32,8 +32,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const { toast } = useToast();
   const { user } = useUser();
   const router = useRouter();
-  const { id } = params;
-
+  
   const [messageOpen, setMessageOpen] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [providerData, setProviderData] = useState<Provider | null>();
@@ -41,10 +40,10 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (!id) return;
+    if (!params.id) return;
     const fetchProviderData = async () => {
       setIsLoading(true);
-      const foundProvider = await getProvider(id);
+      const foundProvider = await getProvider(params.id);
       setProviderData(foundProvider || null);
 
       if (foundProvider && foundProvider.type === 'agency' && foundProvider.managedProviderIds) {
@@ -55,7 +54,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     };
 
     fetchProviderData();
-  }, [id]);
+  }, [params.id]);
 
 
   const handleSendMessage = async (e: React.FormEvent) => {
