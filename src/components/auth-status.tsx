@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, UserCircle, LayoutDashboard, UserPlus, LogIn } from 'lucide-react';
+import { LogOut, UserCircle, LayoutDashboard, UserPlus, LogIn, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Provider } from '@/lib/types';
 
@@ -88,9 +88,15 @@ export function AuthStatus() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
            <DropdownMenuItem asChild className="cursor-pointer">
-             <Link href="/profile/edit">
+             <Link href="/dashboard">
                 <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Meu Perfil</span>
+                <span>Meu Dashboard</span>
+             </Link>
+          </DropdownMenuItem>
+           <DropdownMenuItem asChild className="cursor-pointer">
+             <Link href="/profile/edit">
+                <Edit className="mr-2 h-4 w-4" />
+                <span>Editar Perfil</span>
              </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
