@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { getProvider, getProvidersByIds } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ import { Clock, CheckCircle, MapPin, MessageSquare, Phone, Briefcase, Users, Sen
 import { ReviewForm } from '@/components/review-form';
 import { ProviderCard } from '@/components/provider-card';
 import type { PortfolioItem, Provider } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -28,7 +28,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PlanIcon } from '@/components/plan-icon';
 
 
-export default function ProviderProfilePage({ params }: { params: { id: string } }) {
+export default function ProviderProfilePage() {
+  const params = use(useParams());
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { toast } = useToast();
   const { user } = useUser();
   const router = useRouter();
@@ -40,10 +42,10 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (!params.id) return;
+    if (!id) return;
     const fetchProviderData = async () => {
       setIsLoading(true);
-      const foundProvider = await getProvider(params.id);
+      const foundProvider = await getProvider(id);
       setProviderData(foundProvider || null);
 
       if (foundProvider && foundProvider.type === 'agency' && foundProvider.managedProviderIds) {
@@ -54,7 +56,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     };
 
     fetchProviderData();
-  }, [params.id]);
+  }, [id]);
 
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -67,7 +69,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
 
     setIsSendingMessage(true);
     formData.append('providerId', providerData.id);
-    formData.append('clientId', user.uid);
     
     const result = await startChat(formData);
     
@@ -183,7 +184,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                   </div>
                 
                   <div className="flex flex-col gap-2 pt-4 border-t">
-                    {!user ? (
+                    {!user || !isClient ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span tabIndex={0}>{callButtonTrigger}</span>
@@ -193,7 +194,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                         </TooltipContent>
                       </Tooltip>
                     ) : (
-                      isClient && callButtonTrigger
+                      callButtonTrigger
                     )}
 
                     <Dialog open={messageOpen} onOpenChange={setMessageOpen}>

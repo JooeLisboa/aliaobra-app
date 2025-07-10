@@ -1,6 +1,8 @@
+
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
+import { useParams } from 'next/navigation';
 import { doc, collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useUser } from '@/hooks/use-user';
@@ -57,7 +59,9 @@ function ChatMessages({ messages, currentUserId, chatInfo }: { messages: ChatMes
     );
 }
 
-export default function ChatRoomPage({ params }: { params: { chatId: string } }) {
+export default function ChatRoomPage() {
+    const params = use(useParams());
+    const chatId = Array.isArray(params.chatId) ? params.chatId[0] : params.chatId;
     const { user, isLoading: isUserLoading } = useUser();
     const { toast } = useToast();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -73,7 +77,7 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
             return;
         };
 
-        const chatRef = doc(db, 'chats', params.chatId);
+        const chatRef = doc(db, 'chats', chatId);
         const messagesQuery = query(collection(chatRef, 'messages'), orderBy('timestamp', 'asc'));
 
         const unsubscribeChat = onSnapshot(chatRef, (doc) => {
@@ -110,7 +114,7 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
             unsubscribeMessages();
         };
 
-    }, [params.chatId, user, isUserLoading]);
+    }, [chatId, user, isUserLoading]);
 
     const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -119,10 +123,8 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
 
         setIsSending(true);
         const formData = new FormData();
-        formData.append('chatId', params.chatId);
+        formData.append('chatId', chatId);
         formData.append('messageText', messageText);
-
-        // NOTE: senderId is now handled securely on the server action.
 
         const result = await sendMessageInChat(formData);
 

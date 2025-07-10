@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { useState, useEffect, useTransition, use } from 'react';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getService, getProposalsForService } from '@/lib/data';
 import type { Service, Proposal } from '@/lib/types';
@@ -30,7 +31,6 @@ function ProposalForm({ serviceId, providerId }: { serviceId: string; providerId
         startTransition(async () => {
             const formData = new FormData(event.currentTarget);
             formData.append('serviceId', serviceId);
-            formData.append('providerId', providerId);
 
             const result = await createProposal(formData);
 
@@ -81,7 +81,9 @@ function ProposalForm({ serviceId, providerId }: { serviceId: string; providerId
 }
 
 
-export default function ServiceDetailPage({ params }: { params: { id: string } }) {
+export default function ServiceDetailPage() {
+    const params = use(useParams());
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
     const [service, setService] = useState<Service | null | undefined>(undefined);
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -93,16 +95,16 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
     useEffect(() => {
         const fetchServiceData = async () => {
             setIsLoading(true);
-            const serviceData = await getService(params.id);
+            const serviceData = await getService(id);
             setService(serviceData);
             if (serviceData) {
-                const proposalData = await getProposalsForService(params.id);
+                const proposalData = await getProposalsForService(id);
                 setProposals(proposalData);
             }
             setIsLoading(false);
         };
         fetchServiceData();
-    }, [params.id]);
+    }, [id]);
     
     const handleAcceptProposal = (proposal: Proposal) => {
       if (!service || !user) return;
@@ -111,7 +113,6 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
           serviceId: service.id,
           proposalId: proposal.id,
           providerId: proposal.providerId,
-          clientId: user.uid, // Pass the currently logged-in user's ID for server-side validation
         });
 
         if (result.success) {
