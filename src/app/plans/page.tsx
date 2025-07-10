@@ -33,7 +33,9 @@ export default function PlansPage() {
       try {
         setIsLoadingProducts(true);
         const prods = await getActiveProductsWithPrices();
-        setProducts(prods);
+        // Filter out the 'basico' plan from the display
+        const displayableProds = prods.filter(p => p.metadata?.firebaseRole !== 'basico');
+        setProducts(displayableProds);
       } catch (error) {
         console.error("Failed to fetch products:", error);
         toast({ variant: 'destructive', title: 'Erro ao carregar planos', description: 'Não foi possível buscar os planos de assinatura. Tente novamente mais tarde.'});
@@ -111,7 +113,6 @@ export default function PlansPage() {
   };
 
   const isLoading = isUserLoading || isLoadingProducts;
-  const displayableProducts = products;
 
   const renderPlanCard = (product: StripeProduct) => {
     const priceInfo = product.prices.find((p) => p.recurring);
@@ -174,13 +175,13 @@ export default function PlansPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return Array.from({ length: 3 }).map((_, i) => (
+      return Array.from({ length: 2 }).map((_, i) => (
         <Card key={i} className="flex flex-col"><CardHeader><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-3/4 mt-2" /></CardHeader><CardContent className="flex-grow space-y-4"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent><CardFooter><Skeleton className="h-11 w-full" /></CardFooter></Card>
       ));
     }
 
-    if (displayableProducts.length > 0) {
-      return displayableProducts.map((product) => renderPlanCard(product));
+    if (products.length > 0) {
+      return products.map((product) => renderPlanCard(product));
     }
     
     return renderFallbackContent();
@@ -206,7 +207,7 @@ export default function PlansPage() {
             </AlertDescription>
         </Alert>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
           {renderContent()}
         </div>
         
