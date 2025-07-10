@@ -27,7 +27,6 @@ export default function PlansPage() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [showDebugCard, setShowDebugCard] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -35,10 +34,6 @@ export default function PlansPage() {
         setIsLoadingProducts(true);
         const prods = await getActiveProductsWithPrices();
         setProducts(prods);
-        // Se encontrarmos produtos, o webhook provavelmente está funcionando, então podemos ocultar o card de depuração.
-        if (prods.length > 0) {
-            setShowDebugCard(false);
-        }
       } catch (error) {
         console.error("Failed to fetch products:", error);
         toast({ variant: 'destructive', title: 'Erro ao carregar planos', description: 'Não foi possível buscar os planos de assinatura. Tente novamente mais tarde.'});
@@ -176,33 +171,15 @@ export default function PlansPage() {
   
   const renderFallbackContent = () => (
     <div className="md:col-span-2 lg:col-span-3">
-        {showDebugCard ? (
-            <Alert variant="default" className="max-w-4xl mx-auto mt-12 bg-yellow-50 border-yellow-200">
-                <ServerCrash className="h-4 w-4 text-yellow-600" />
-                <AlertTitle className="text-yellow-800 font-bold">Guia Rápido: Como Encontrar seu URL de Webhook</AlertTitle>
-                <AlertDescription className="text-yellow-700 space-y-4">
-                    <p>Seus planos não estão aparecendo porque a comunicação entre o Stripe e o Firebase (via webhook) provavelmente não está configurada. Siga estes passos para encontrar o URL correto:</p>
-                    <ol className="list-decimal list-inside space-y-2">
-                        <li>Acesse o <a href={`https://console.firebase.google.com/project/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/extensions`} target="_blank" rel="noopener noreferrer" className="font-bold underline">Console do Firebase</a> e vá para a página de **Extensões**.</li>
-                        <li>Clique em **"Gerenciar"** na sua extensão "Run Payments with Stripe".</li>
-                        <li>Na seção **"Recursos criados"**, você encontrará o URL do webhook.</li>
-                        <li>Use esse URL para criar um novo endpoint no seu <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="font-bold underline">Painel de Webhooks do Stripe</a>.</li>
-                    </ol>
-                    <div className="p-2 bg-yellow-100 rounded-md">
-                        <Image src="https://storage.googleapis.com/static.aifor.dev/serviopro/webhook_location_firebase.png" alt="Onde encontrar o URL do Webhook no console do Firebase" width={600} height={200} className="rounded-md" />
-                    </div>
-                </AlertDescription>
-            </Alert>
-        ) : (
-            <Alert className="max-w-4xl mx-auto mt-12">
-                <Info className="h-4 w-4" />
-                <AlertTitle>Nenhum Plano Ativo Encontrado</AlertTitle>
-                <AlertDescription>
-                    <p>Verifique se você criou produtos com preços ativos no seu painel do Stripe.</p>
-                    <p className="mt-2">Lembre-se de adicionar o metadado `firebaseRole` em cada produto para que eles sejam sincronizados corretamente.</p>
-                </AlertDescription>
-            </Alert>
-        )}
+        <Alert className="max-w-4xl mx-auto mt-12">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Nenhum Plano Ativo Encontrado</AlertTitle>
+            <AlertDescription>
+                <p>Verifique se você criou produtos com preços ativos no seu painel do Stripe.</p>
+                <p className="mt-2">Lembre-se de adicionar o metadado `firebaseRole` em cada produto para que eles sejam sincronizados corretamente com a extensão do Firebase.</p>
+                <p className="mt-2">Se os planos não aparecerem, verifique se o webhook do Stripe está configurado corretamente para enviar os eventos de `product.created` e `product.updated` para o Firebase.</p>
+            </AlertDescription>
+        </Alert>
     </div>
   );
 
