@@ -11,6 +11,12 @@ import type { Provider } from '@/lib/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
+function capitalize(str: string) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+
 export default function Home() {
   const [allProviders, setAllProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,7 +91,7 @@ export default function Home() {
                       <SelectContent>
                         {categories.map(category => (
                           <SelectItem key={category} value={category}>
-                            {category === 'all' ? 'Todas as categorias' : category}
+                            {category === 'all' ? 'Todas as categorias' : capitalize(category)}
                           </SelectItem>
                         ))}
                       </SelectContent>

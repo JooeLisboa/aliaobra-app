@@ -34,6 +34,7 @@ const profileSchema = z.object({
   location: z.string().min(2, 'A localização deve ter pelo menos 2 caracteres.'),
   bio: z.string().min(10, 'A biografia deve ter pelo menos 10 caracteres.').max(500, 'A biografia não pode ter mais de 500 caracteres.'),
   skills: z.string().optional(),
+  avatarUrl: z.string().url().optional(),
   portfolio: z.array(z.object({
     id: z.string(),
     imageUrl: z.string().url(),
@@ -75,7 +76,7 @@ export default function EditProfilePage() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: '', category: '', location: '', bio: '', skills: '', portfolio: [] },
+    defaultValues: { name: '', category: '', location: '', bio: '', skills: '', avatarUrl: '', portfolio: [] },
   });
 
   const { fields, remove } = useFieldArray({
@@ -98,6 +99,7 @@ export default function EditProfilePage() {
           location: providerData.location,
           bio: providerData.bio,
           skills: providerData.skills.join('\n'),
+          avatarUrl: providerData.avatarUrl,
           portfolio: providerData.portfolio,
         });
         setAvatarPreview(providerData.avatarUrl);
@@ -187,6 +189,9 @@ export default function EditProfilePage() {
       formData.append('location', data.location);
       formData.append('bio', data.bio);
       formData.append('skills', data.skills ?? '');
+      if (data.avatarUrl) {
+        formData.append('avatarUrl', data.avatarUrl);
+      }
 
       if (avatarFile) {
         formData.append('avatar', avatarFile);

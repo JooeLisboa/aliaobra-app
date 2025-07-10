@@ -16,6 +16,7 @@ const profileDetailsSchema = z.object({
   location: z.string().min(2, 'A localização deve ter pelo menos 2 caracteres.'),
   bio: z.string().min(10, 'A biografia deve ter pelo menos 10 caracteres.').max(500, 'A biografia não pode ter mais de 500 caracteres.'),
   skills: z.string().optional(),
+  avatarUrl: z.string().url().optional(),
 });
 
 export async function updateProfileDetails(formData: FormData) {
@@ -40,13 +41,13 @@ export async function updateProfileDetails(formData: FormData) {
     }
 
     const avatarFile = formData.get('avatar') as File | null;
-    let avatarUrl: string | undefined = undefined;
+    let newAvatarUrl: string | undefined = undefined;
 
     if (avatarFile && avatarFile.size > 0) {
       const avatarRef = ref(storage, `profile-pictures/${userId}/avatar`);
       const buffer = await avatarFile.arrayBuffer();
       await uploadBytes(avatarRef, buffer, { contentType: avatarFile.type });
-      avatarUrl = await getDownloadURL(avatarRef);
+      newAvatarUrl = await getDownloadURL(avatarRef);
     }
     
     const skillsArray = skills ? skills.split('\n').map(s => s.trim()).filter(Boolean) : [];
@@ -56,8 +57,11 @@ export async function updateProfileDetails(formData: FormData) {
       skills: skillsArray,
     };
     
-    if (avatarUrl) {
-      firestoreUpdateData.avatarUrl = avatarUrl;
+    // Only update avatarUrl if a new one was uploaded, otherwise keep the existing one from updateData
+    if (newAvatarUrl) {
+      firestoreUpdateData.avatarUrl = newAvatarUrl;
+    } else {
+      firestoreUpdateData.avatarUrl = updateData.avatarUrl;
     }
 
     await updateDoc(providerRef, firestoreUpdateData);
