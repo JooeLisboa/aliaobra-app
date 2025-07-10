@@ -114,14 +114,14 @@ export default function PlansPage() {
     if (!price) return { text: 'Indisponível', disabled: true, variant: 'secondary' as 'secondary' };
 
     if (!user) {
-        return { text: 'Assinar Agora', disabled: false, variant: product.metadata?.isFeatured === 'true' ? 'default' : 'outline' as 'default' | 'outline' };
+        return { text: 'Assinar Agora', disabled: false, variant: product.metadata?.firebaseRole === 'profissional' ? 'default' : 'outline' as 'default' | 'outline' };
     }
     
     if (user.subscription?.product?.id === product.id) {
         return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as 'secondary' };
     }
     
-    return { text: 'Fazer Upgrade', disabled: false, variant: product.metadata?.isFeatured === 'true' ? 'default' : 'outline' as 'default' | 'outline' };
+    return { text: 'Fazer Upgrade', disabled: false, variant: product.metadata?.firebaseRole === 'profissional' ? 'default' : 'outline' as 'default' | 'outline' };
   };
 
   const isLoading = isUserLoading || isLoadingProducts;
@@ -131,7 +131,7 @@ export default function PlansPage() {
     const priceInfo = product.prices.find((p) => p.recurring);
     const buttonState = getButtonState(product);
     const priceId = priceInfo!.id; 
-    const isFeatured = product.metadata?.isFeatured === 'true';
+    const isFeatured = product.metadata?.firebaseRole === 'profissional';
 
     return (
       <Card key={product.id} className={`flex flex-col ${isFeatured ? 'border-primary shadow-lg' : ''}`}>
@@ -175,11 +175,16 @@ export default function PlansPage() {
     <div className="md:col-span-2 lg:col-span-3">
         <Alert className="max-w-4xl mx-auto mt-12">
             <Info className="h-4 w-4" />
-            <AlertTitle>Aguardando Sincronização com o Stripe</AlertTitle>
+            <AlertTitle>Planos não encontrados no banco de dados</AlertTitle>
             <AlertDescription>
-                <p>Seus planos criados no painel do Stripe ainda não apareceram. Isso pode levar alguns minutos ou indicar um problema com a configuração dos Webhooks.</p>
+                <p>O aplicativo não encontrou os produtos do Stripe na coleção do Firestore. Isso geralmente acontece por uma falha na comunicação (Webhooks).</p>
                 <br/>
-                <p><strong>Ação Recomendada:</strong> Verifique seus <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhooks no Stripe</a> para garantir que os eventos (`product.created`, `price.created`, etc) estão sendo enviados corretamente para o Firebase.</p>
+                <p><strong>Ação Recomendada:</strong></p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                    <li>Verifique se os eventos <strong>product.created</strong> e <strong>price.created</strong> estão ativos no seu <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Webhook do Stripe</a>.</li>
+                     <li>Após confirmar os webhooks, edite a descrição de um produto no Stripe para forçar a sincronização.</li>
+                     <li>Você pode também tentar reenviar eventos passados na página de <a href="https://dashboard.stripe.com/events" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Eventos do Stripe</a>.</li>
+                </ul>
             </AlertDescription>
         </Alert>
     </div>
