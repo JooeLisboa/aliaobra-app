@@ -11,7 +11,7 @@ import {
   SidebarMenuButton, 
   SidebarTrigger 
 } from "@/components/ui/sidebar";
-import { Wrench, Home, ClipboardList, Info, MessageSquare, Briefcase } from "lucide-react";
+import { Wrench, Home, ClipboardList, Info, MessageSquare, Briefcase, Wand2 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
 import { AuthStatus } from "./auth-status";
@@ -48,12 +48,17 @@ export function MainSidebar() {
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Serviços', side: 'right'}}>
-                <Link href="/services"><Briefcase /><span>Serviços</span></Link>
+                <Link href="/services"><Briefcase /><span>Mural de Serviços</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={{children: 'Busca com IA', side: 'right'}}>
+                <Link href="/premium-search"><Wand2 /><span>Busca com IA</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{children: 'Planos', side: 'right'}}>
-                <Link href="/plans"><ClipboardList /><span>Planos</span></Link>
+                <Link href="/plans"><ClipboardList /><span>Nossos Planos</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
