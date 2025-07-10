@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser } from '@/hooks/use-user';
@@ -110,17 +109,21 @@ export default function DashboardPage() {
     
     useEffect(() => {
         if (user) {
-            const fetchServices = async () => {
-                setIsLoadingData(true);
-                const allServices = await getServices();
-                setServices(allServices);
+            if (user.profile?.userType === 'client') {
+                 const fetchServices = async () => {
+                    setIsLoadingData(true);
+                    const allServices = await getServices();
+                    setServices(allServices);
+                    setIsLoadingData(false);
+                };
+                fetchServices();
+            } else {
                 setIsLoadingData(false);
-            };
-            fetchServices();
+            }
         }
     }, [user]);
 
-    if (isUserLoading || isLoadingData) {
+    if (isUserLoading || (user && isLoadingData)) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]"><LoaderCircle className="w-8 h-8 animate-spin" /></div>;
     }
 

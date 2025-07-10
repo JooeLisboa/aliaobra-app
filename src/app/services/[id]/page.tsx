@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -106,13 +105,13 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
     }, [params.id]);
     
     const handleAcceptProposal = (proposal: Proposal) => {
-      if (!service) return;
+      if (!service || !user) return;
       startAcceptance(async () => {
         const result = await acceptProposal({
           serviceId: service.id,
           proposalId: proposal.id,
           providerId: proposal.providerId,
-          clientId: service.clientId
+          clientId: user.uid, // Pass the currently logged-in user's ID for server-side validation
         });
 
         if (result.success) {
@@ -140,7 +139,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
     const isProvider = user?.profile?.userType === 'provider' || user?.profile?.userType === 'agency';
     const hasAlreadyProposed = user && proposals.some(p => p.providerId === user.uid);
     const isSubscriber = isProvider && (user?.subscription?.status === 'active' || user?.subscription?.status === 'trialing');
-
+    const serviceProvider = proposals.find(p => p.providerId === service.assignedProviderId);
     
     return (
         <div className="container mx-auto max-w-4xl py-12">
@@ -191,7 +190,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                         <h3 className="text-xl font-semibold mb-4">
                           {isOwner ? 'Propostas Recebidas' : 'Profissional Contratado'}
                         </h3>
-                         {service.status === 'in_progress' && service.assignedProviderId ? (
+                         {service.status === 'in_progress' && service.assignedProviderId && serviceProvider ? (
                             <Card>
                                <CardHeader>
                                   <CardTitle>Serviço em andamento com:</CardTitle>
@@ -199,11 +198,11 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                                <CardContent>
                                     <Link href={`/providers/${service.assignedProviderId}`} className="flex items-center gap-3 hover:bg-muted p-2 rounded-md">
                                         <Avatar>
-                                            <AvatarImage src={proposals.find(p => p.providerId === service.assignedProviderId)?.providerAvatarUrl} />
-                                            <AvatarFallback>{proposals.find(p => p.providerId === service.assignedProviderId)?.providerName.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={serviceProvider.providerAvatarUrl} />
+                                            <AvatarFallback>{serviceProvider.providerName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <p className="font-bold text-primary">{proposals.find(p => p.providerId === service.assignedProviderId)?.providerName}</p>
+                                            <p className="font-bold text-primary">{serviceProvider.providerName}</p>
                                             <p className="text-sm text-muted-foreground">Proposta aceita no valor de R$ {service.acceptedProposalAmount?.toLocaleString('pt-BR')}</p>
                                         </div>
                                     </Link>

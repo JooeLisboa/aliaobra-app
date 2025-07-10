@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -21,11 +20,11 @@ import { createUserProfile } from '@/lib/auth-actions';
 import { Wrench, LoaderCircle } from "lucide-react";
 
 // Basic validation for CPF/CNPJ format
-const cpfCnpjRegex = /(^\d{3}\.\d{3}\.\d{3}-\d{2}$)|(^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$)|(^\d{11}$)|(^\d{14}$)/;
+const cpfCnpjRegex = /^(?:\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{11}|\d{14})$/;
 
 const signupSchema = z.object({
   fullName: z.string().min(3, { message: 'Nome completo deve ter no mínimo 3 caracteres.' }),
-  cpfCnpj: z.string().regex(cpfCnpjRegex, { message: 'CPF ou CNPJ inválido.' }),
+  cpfCnpj: z.string().regex(cpfCnpjRegex, { message: 'CPF ou CNPJ inválido. Use apenas números ou o formato com pontuação.' }),
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
   password: z.string().min(6, { message: 'A senha deve ter no mínimo 6 caracteres.' }),
   userType: z.enum(['client', 'provider', 'agency'], { required_error: 'Por favor, selecione um objetivo.'}),

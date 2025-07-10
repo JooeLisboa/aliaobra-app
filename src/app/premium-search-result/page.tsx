@@ -1,7 +1,7 @@
 // src/app/premium-search-result/page.tsx
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { Suspense, useEffect, useState, useTransition } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoaderCircle, Wand2, SearchX } from 'lucide-react';
@@ -11,8 +11,9 @@ import { ProviderCard } from '@/components/provider-card';
 import type { Provider } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-export default function PremiumSearchResultPage() {
+function PremiumSearchResultContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -77,7 +78,9 @@ export default function PremiumSearchResultPage() {
         </CardHeader>
         <CardContent>
           {result ? (
-            <ProviderCard provider={result} />
+            <TooltipProvider>
+                <ProviderCard provider={result} />
+            </TooltipProvider>
           ) : (
             <div className="text-center text-muted-foreground p-8">
               <SearchX className="mx-auto h-16 w-16 mb-4" />
@@ -92,4 +95,13 @@ export default function PremiumSearchResultPage() {
       </Card>
     </div>
   );
+}
+
+
+export default function PremiumSearchResultPage() {
+  return (
+    <Suspense>
+        <PremiumSearchResultContent />
+    </Suspense>
+  )
 }

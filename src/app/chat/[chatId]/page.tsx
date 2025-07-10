@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -36,10 +35,10 @@ function ChatMessages({ messages, currentUserId, chatInfo }: { messages: ChatMes
                     <div key={msg.id} className={cn("flex items-end gap-2", isCurrentUser && "justify-end")}>
                         {!isCurrentUser && (
                             <div className="w-8 h-8 shrink-0">
-                                {showAvatar && 
+                                {showAvatar && otherParticipant &&
                                     <Avatar className="w-8 h-8">
-                                        <AvatarImage src={otherParticipant?.avatarUrl} />
-                                        <AvatarFallback>{otherParticipant?.name.charAt(0)}</AvatarFallback>
+                                        <AvatarImage src={otherParticipant.avatarUrl} />
+                                        <AvatarFallback>{otherParticipant.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                 }
                             </div>
@@ -65,6 +64,7 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
     const [chatInfo, setChatInfo] = useState<Chat | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
+    const [accessDenied, setAccessDenied] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -81,12 +81,14 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
                 const data = doc.data() as Omit<Chat, 'id'>;
                 if (!data.participantIds.includes(user.uid)) {
                      setChatInfo(null);
+                     setAccessDenied(true);
                      setIsLoading(false);
                      return;
                 }
                 setChatInfo({id: doc.id, ...data});
              } else {
                  setChatInfo(null);
+                 setAccessDenied(true);
              }
              setIsLoading(false);
         });
@@ -118,9 +120,9 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
         setIsSending(true);
         const formData = new FormData();
         formData.append('chatId', params.chatId);
-        // Securely add senderId
-        formData.append('senderId', user.uid);
         formData.append('messageText', messageText);
+
+        // NOTE: senderId is now handled securely on the server action.
 
         const result = await sendMessageInChat(formData);
 
@@ -137,7 +139,7 @@ export default function ChatRoomPage({ params }: { params: { chatId: string } })
         return <div className="w-full flex-1 flex items-center justify-center"><LoaderCircle className="w-8 h-8 animate-spin" /></div>;
     }
 
-    if (!chatInfo || !user) {
+    if (accessDenied || !chatInfo || !user) {
         return <div className="w-full flex-1 flex items-center justify-center p-4">Acesso negado ou a conversa não existe.</div>;
     }
 

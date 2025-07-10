@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -53,9 +52,13 @@ export default function NewServicePage() {
     }
 
     async function onSubmit(values: ServiceFormValues) {
+        if (!user) {
+             toast({ variant: 'destructive', title: 'Erro de Autenticação', description: 'Você precisa estar logado para publicar.' });
+             return;
+        }
         startTransition(async () => {
             const formData = new FormData();
-            formData.append('clientId', user!.uid);
+            // NOTE: clientId is now handled securely on the server
             formData.append('title', values.title);
             formData.append('description', values.description);
             formData.append('category', values.category);

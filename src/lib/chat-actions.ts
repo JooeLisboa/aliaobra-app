@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -20,18 +19,39 @@ import type { Chat, Provider, UserProfile } from '@/lib/types';
 import { getProvider } from './data';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { getFirebaseAdmin } from './firebase-admin';
+import { headers } from 'next/headers';
 
 const startChatSchema = z.object({
   providerId: z.string(),
-  clientId: z.string(),
+  // clientId is now derived on the server
   initialMessage: z.string().min(1, "A mensagem não pode estar vazia.").max(500, "A mensagem é muito longa."),
 });
 
 const sendMessageSchema = z.object({
   chatId: z.string(),
-  senderId: z.string(),
+  // senderId is now derived on the server
   messageText: z.string().min(1, "A mensagem não pode estar vazia.").max(500, "A mensagem é muito longa."),
 });
+
+// Helper function to decode the Firebase auth token
+async function getUserIdFromToken() {
+    const authorization = headers().get('Authorization');
+    if (!authorization?.startsWith('Bearer ')) {
+        return null;
+    }
+    const token = authorization.split('Bearer ')[1];
+    if (!token) return null;
+
+    try {
+        const { auth } = getFirebaseAdmin();
+        const decodedToken = await auth.verifyIdToken(token);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error("Error verifying auth token:", error);
+        return null;
+    }
+}
 
 function getChatId(uid1: string, uid2: string) {
   return [uid1, uid2].sort().join('_');
@@ -42,6 +62,11 @@ export async function startChat(formData: FormData) {
     return { success: false, error: 'O serviço de banco de dados não está disponível.' };
   }
 
+  const clientId = await getUserIdFromToken();
+  if (!clientId) {
+    return { success: false, error: 'Usuário não autenticado.' };
+  }
+
   const rawData = Object.fromEntries(formData.entries());
   const validation = startChatSchema.safeParse(rawData);
 
@@ -49,7 +74,7 @@ export async function startChat(formData: FormData) {
     return { success: false, error: 'Dados inválidos.', details: validation.error.flatten() };
   }
 
-  const { providerId, clientId, initialMessage } = validation.data;
+  const { providerId, initialMessage } = validation.data;
   
   if (providerId === clientId) {
     return { success: false, error: 'Você não pode iniciar uma conversa consigo mesmo.' };
@@ -124,13 +149,18 @@ export async function sendMessageInChat(formData: FormData) {
     return { success: false, error: 'O serviço de banco de dados não está disponível.' };
   }
 
+  const senderId = await getUserIdFromToken();
+  if (!senderId) {
+    return { success: false, error: 'Usuário não autenticado.' };
+  }
+
   const validation = sendMessageSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validation.success) {
     return { success: false, error: 'Dados da mensagem são inválidos.' };
   }
   
-  const { chatId, senderId, messageText } = validation.data;
+  const { chatId, messageText } = validation.data;
   const chatRef = doc(db, 'chats', chatId);
   
   try {
@@ -169,7 +199,8 @@ export async function getUserChats(userId: string): Promise<Chat[]> {
   
   const chatsQuery = query(
     collection(db, 'chats'),
-    where('participantIds', 'array-contains', userId)
+    where('participantIds', 'array-contains', userId),
+    orderBy('updatedAt', 'desc')
   );
 
   const querySnapshot = await getDocs(chatsQuery);
@@ -183,7 +214,5 @@ export async function getUserChats(userId: string): Promise<Chat[]> {
       return { id: doc.id, ...data } as Chat
   });
   
-  chats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-
   return chats;
 }
