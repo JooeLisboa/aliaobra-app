@@ -56,7 +56,8 @@ function setupFirebase() {
     
     // Extract App ID from the table-like output by splitting and trimming
     const columns = webAppLine.split('│').map(col => col.trim());
-    const webAppId = columns.length > 2 ? columns[1] : ''; // App ID is typically the second column
+    // CORRECTED: App ID is in the 3rd column (index 2), not the 2nd.
+    const webAppId = columns.length > 2 ? columns[2] : ''; 
 
     if (!webAppId || !webAppId.includes(':web:')) {
         throw new Error(`Could not reliably extract the Web App ID. Parsed line: "${webAppLine}"`);
@@ -68,12 +69,15 @@ function setupFirebase() {
     console.log(`Fetching Firebase web app configuration for App ID ${webAppId}...`);
     const configResult = execSync(`firebase apps:sdkconfig WEB ${webAppId} --project ${projectId}`, { encoding: 'utf-8' });
     
+    // A robust way to parse the JSON output from the command
     const jsonMatch = configResult.match(/{\s*"firebase":\s*{[\s\S]*?}\s*}/);
-    if (!jsonMatch) {
-      throw new Error("Could not parse the Firebase config for the specified app.");
+    if (!jsonMatch || !jsonMatch[0]) {
+      throw new Error("Could not parse the Firebase config JSON from the CLI output.");
     }
+    
+    const configObject = JSON.parse(jsonMatch[0]);
+    const firebaseConfig = configObject.firebase || configObject;
 
-    const firebaseConfig = JSON.parse(jsonMatch[0]).firebase;
 
     // Path to the .env file in the project root
     const envPath = resolve(process.cwd(), '.env');
@@ -89,7 +93,7 @@ function setupFirebase() {
       `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${firebaseConfig.messagingSenderId}`,
       `NEXT_PUBLIC_FIREBASE_APP_ID=${firebaseConfig.appId}`,
       ``, // Add a newline for readability
-      `# Stripe configuration`,
+      `# Stripe configuration - Add your keys below`,
       `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=`,
     ].join('\n');
     
