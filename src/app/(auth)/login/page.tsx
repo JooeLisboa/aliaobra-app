@@ -52,10 +52,10 @@ export default function LoginPage() {
       
       toast({
         title: "Login realizado com sucesso!",
-        description: "Você será redirecionado para a página inicial.",
+        description: "Você será redirecionado para o seu dashboard.",
       });
 
-      router.push('/');
+      router.push('/dashboard');
 
     } catch (error: any) {
       console.error(error);
