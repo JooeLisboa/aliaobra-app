@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useTransition, use } from 'react';
-import { notFound, useRouter, useParams } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getService, getProposalsForService } from '@/lib/data';
 import type { Service, Proposal } from '@/lib/types';
@@ -21,7 +21,7 @@ import { createProposal, acceptProposal } from '@/lib/service-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-function ProposalForm({ serviceId, providerId }: { serviceId: string; providerId: string; }) {
+function ProposalForm({ serviceId }: { serviceId: string; }) {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -81,9 +81,8 @@ function ProposalForm({ serviceId, providerId }: { serviceId: string; providerId
 }
 
 
-export default function ServiceDetailPage() {
-    const params = use(useParams());
-    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+export default function ServiceDetailPage({ params }: { params: { id: string } }) {
+    const { id } = use(params);
     const [service, setService] = useState<Service | null | undefined>(undefined);
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +92,7 @@ export default function ServiceDetailPage() {
     const router = useRouter();
 
     useEffect(() => {
+        if (!id) return;
         const fetchServiceData = async () => {
             setIsLoading(true);
             const serviceData = await getService(id);
@@ -108,6 +108,10 @@ export default function ServiceDetailPage() {
     
     const handleAcceptProposal = (proposal: Proposal) => {
       if (!service || !user) return;
+      if (user.uid !== service.clientId) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Você não tem permissão para aceitar propostas para este serviço.' });
+        return;
+      }
       startAcceptance(async () => {
         const result = await acceptProposal({
           serviceId: service.id,
@@ -189,7 +193,7 @@ export default function ServiceDetailPage() {
                     
                      <div className="pt-6 border-t">
                         <h3 className="text-xl font-semibold mb-4">
-                          {isOwner ? 'Propostas Recebidas' : 'Profissional Contratado'}
+                          {isOwner || service.status !== 'open' ? 'Propostas' : 'Proponha sua Oferta'}
                         </h3>
                          {service.status === 'in_progress' && service.assignedProviderId && serviceProvider ? (
                             <Card>
@@ -262,7 +266,7 @@ export default function ServiceDetailPage() {
                                   </AlertDescription>
                                 </Alert>
                             ) : isSubscriber ? (
-                                <ProposalForm serviceId={service.id} providerId={user.uid} />
+                                <ProposalForm serviceId={service.id} />
                             ) : (
                                 <Alert variant="default" className="border-primary/50 text-center">
                                     <ShieldAlert className="h-4 w-4" />

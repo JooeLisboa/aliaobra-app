@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getProvider, getProvidersByIds } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,9 +28,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PlanIcon } from '@/components/plan-icon';
 
 
-export default function ProviderProfilePage() {
-  const params = use(useParams());
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+export default function ProviderProfilePage({ params }: { params: { id: string } }) {
+  const { id } = use(params);
   const { toast } = useToast();
   const { user } = useUser();
   const router = useRouter();
@@ -127,7 +126,7 @@ export default function ProviderProfilePage() {
   );
 
   const callButtonTrigger = (
-      <Button className="w-full" size="lg" disabled={!user || !isClient}>
+      <Button className="w-full" size="lg" disabled={!user || !isClient || isOwner}>
         <Phone className="mr-2"/> Ligar
       </Button>
   );
@@ -184,7 +183,7 @@ export default function ProviderProfilePage() {
                   </div>
                 
                   <div className="flex flex-col gap-2 pt-4 border-t">
-                    {!user || !isClient ? (
+                    {!user ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span tabIndex={0}>{callButtonTrigger}</span>

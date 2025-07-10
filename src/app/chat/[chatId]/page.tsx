@@ -59,9 +59,8 @@ function ChatMessages({ messages, currentUserId, chatInfo }: { messages: ChatMes
     );
 }
 
-export default function ChatRoomPage() {
-    const params = use(useParams());
-    const chatId = Array.isArray(params.chatId) ? params.chatId[0] : params.chatId;
+export default function ChatRoomPage({ params }: { params: { chatId: string } }) {
+    const { chatId } = use(params);
     const { user, isLoading: isUserLoading } = useUser();
     const { toast } = useToast();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -76,6 +75,8 @@ export default function ChatRoomPage() {
             if (!isUserLoading) setIsLoading(false);
             return;
         };
+
+        if (!chatId) return;
 
         const chatRef = doc(db, 'chats', chatId);
         const messagesQuery = query(collection(chatRef, 'messages'), orderBy('timestamp', 'asc'));
