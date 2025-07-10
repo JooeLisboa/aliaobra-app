@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -6,9 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getProviders } from '@/lib/data';
 import { ProviderCard } from '@/components/provider-card';
-import { Search, LoaderCircle, Building, Users, Star } from 'lucide-react';
+import { Search, LoaderCircle, Building, Users, Star, PencilRuler, SearchCheck, MessageCircle } from 'lucide-react';
 import type { Provider } from '@/lib/types';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 function capitalize(str: string) {
@@ -112,7 +113,47 @@ export default function Home() {
            </div>
         </section>
         
-        <div id="about" className="py-12 md:py-20 bg-background">
+        <div id="how-it-works" className="py-12 md:py-20 bg-background">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Como Funciona?</h2>
+              <p className="mt-4 max-w-3xl mx-auto text-lg leading-8 text-muted-foreground">
+                Um processo simples e transparente para conectar você aos melhores profissionais.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+              <Card className="p-6">
+                <CardHeader className="flex flex-col items-center">
+                  <PencilRuler className="w-12 h-12 text-primary mb-4" />
+                  <h3 className="text-xl font-semibold">1. Descreva seu Projeto</h3>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Clientes publicam os detalhes do serviço que precisam, e os profissionais criam perfis completos para mostrar suas habilidades.</p>
+                </CardContent>
+              </Card>
+              <Card className="p-6">
+                <CardHeader className="flex flex-col items-center">
+                  <SearchCheck className="w-12 h-12 text-primary mb-4" />
+                  <h3 className="text-xl font-semibold">2. Encontre a Combinação</h3>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Navegue pelos perfis, use nossa busca com IA para uma recomendação, ou receba propostas diretamente dos profissionais interessados.</p>
+                </CardContent>
+              </Card>
+              <Card className="p-6">
+                <CardHeader className="flex flex-col items-center">
+                  <MessageCircle className="w-12 h-12 text-primary mb-4" />
+                  <h3 className="text-xl font-semibold">3. Conecte-se e Contrate</h3>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Converse pelo nosso chat seguro, aceite a melhor proposta e inicie seu projeto com confiança. Ao final, avalie o serviço.</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        <div id="about" className="py-12 md:py-20 bg-secondary">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Sobre a AliaObra</h2>
