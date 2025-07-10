@@ -20,7 +20,7 @@ import { db } from '@/lib/firebase';
 import Link from 'next/link';
 
 // TODO: Replace with your actual Stripe Price ID for the one-time consultation
-const PREMIUM_SEARCH_PRICE_ID = 'price_your_one_time_payment_price_id';
+const PREMIUM_SEARCH_PRICE_ID = 'price_...'; // COLE SEU ID DO PREÇO DO STRIPE AQUI
 
 const searchSchema = z.object({
   projectDescription: z.string().min(50, 'Descreva seu projeto com pelo menos 50 caracteres para uma análise precisa.'),
@@ -67,8 +67,8 @@ function PremiumSearchContent() {
       toast({ variant: 'destructive', title: 'Erro de Configuração', description: 'A chave publicável do Stripe não está configurada.' });
       return;
     }
-     if (PREMIUM_SEARCH_PRICE_ID === 'price_your_one_time_payment_price_id') {
-      toast({ variant: 'destructive', title: 'Erro de Configuração', description: 'O ID do preço da consulta premium não foi definido no código.' });
+     if (PREMIUM_SEARCH_PRICE_ID === 'price_...') {
+      toast({ variant: 'destructive', title: 'Erro de Configuração', description: 'O ID do preço da consulta premium não foi definido no código. Crie o produto no Stripe e adicione o ID do preço.' });
       return;
     }
 
