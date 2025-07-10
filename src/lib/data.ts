@@ -123,8 +123,9 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
             }
 
             const pricesRef = collection(productDoc.ref, 'prices');
-            // A condição where('active', '==', true) foi removida dos preços para maior compatibilidade.
-            const priceSnap = await getDocs(pricesRef);
+            // CORRECTED: Query for prices that are also active.
+            const pricesQuery = query(pricesRef, where('active', '==', true));
+            const priceSnap = await getDocs(pricesQuery);
 
             productData.prices = priceSnap.docs.map(priceDoc => ({ id: priceDoc.id, ...priceDoc.data() } as StripePrice));
             
@@ -133,7 +134,8 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
             }
         }
         
-        return products.sort((a, b) => (a.metadata.order || 99) - (b.metadata.order || 99));
+        const sortedProducts = products.sort((a, b) => (a.metadata?.order ?? 99) - (b.metadata?.order ?? 99));
+        return sortedProducts;
 
     } catch (error) {
         console.error("Error fetching active products with prices:", error);
