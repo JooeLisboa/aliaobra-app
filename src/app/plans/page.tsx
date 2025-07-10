@@ -67,6 +67,7 @@ export default function PlansPage() {
             success_url: `${window.location.origin}/profile/edit?plan_success=true`,
             cancel_url: window.location.origin,
             allow_promotion_codes: true,
+            payment_method_types: ['card'],
         });
 
         onSnapshot(docRef, async (snap) => {
@@ -74,7 +75,7 @@ export default function PlansPage() {
             if (error) {
                 const errorMessage = error.message || 'Ocorreu um erro desconhecido durante o pagamento.';
                 toast({ variant: 'destructive', title: 'Erro no Pagamento', description: errorMessage });
-                console.error("Stripe checkout error:", errorMessage);
+                console.error("Stripe checkout error:", errorMessage, error);
                 setIsRedirecting(null);
                 return;
             }
