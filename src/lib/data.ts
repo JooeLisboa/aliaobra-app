@@ -110,8 +110,8 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
 
     try {
         const productsRef = collection(db, 'products');
-        // Order by the 'order' metadata field you can set in Stripe.
-        const productsQuery = query(productsRef, where('active', '==', true), orderBy('metadata.order', 'asc'));
+        // The orderBy clause was removed from here. It can cause issues if not all documents have the field.
+        const productsQuery = query(productsRef, where('active', '==', true));
         const querySnapshot = await getDocs(productsQuery);
         
         const products: StripeProduct[] = [];
@@ -119,7 +119,6 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
         for (const productDoc of querySnapshot.docs) {
             const productData = { id: productDoc.id, ...productDoc.data() } as StripeProduct;
             
-            // We still filter to ensure only products with a role are processed.
             if (!productData.metadata || !productData.metadata.firebaseRole) {
               continue;
             }
@@ -135,7 +134,8 @@ export async function getActiveProductsWithPrices(): Promise<StripeProduct[]> {
             }
         }
         
-        return products;
+        // We now sort the products here, in the code, which is safer.
+        return products.sort((a, b) => (a.metadata.order || 99) - (b.metadata.order || 99));
 
     } catch (error) {
         console.error("Error fetching active products with prices:", error);
