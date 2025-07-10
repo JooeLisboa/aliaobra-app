@@ -74,7 +74,7 @@ export default function PlansPage() {
             if (error) {
                 const errorMessage = error.message || 'Ocorreu um erro desconhecido durante o pagamento.';
                 toast({ variant: 'destructive', title: 'Erro no Pagamento', description: errorMessage });
-                console.error("Stripe checkout error:", error);
+                console.error("Stripe checkout error:", errorMessage);
                 setIsRedirecting(null);
                 return;
             }
