@@ -72,8 +72,9 @@ export default function PlansPage() {
         onSnapshot(docRef, async (snap) => {
             const { error, sessionId } = snap.data() || {};
             if (error) {
-                toast({ variant: 'destructive', title: 'Erro no Pagamento', description: error.message });
-                console.error(error);
+                const errorMessage = error.message || 'Ocorreu um erro desconhecido durante o pagamento.';
+                toast({ variant: 'destructive', title: 'Erro no Pagamento', description: errorMessage });
+                console.error("Stripe checkout error:", error);
                 setIsRedirecting(null);
                 return;
             }
