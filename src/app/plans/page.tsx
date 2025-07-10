@@ -46,17 +46,6 @@ export default function PlansPage() {
     }
   }, [isUserLoading, toast]);
   
-  useEffect(() => {
-    if (searchParams?.get('plan_success')) {
-        toast({
-            title: "Assinatura Ativada!",
-            description: "Seu plano foi atualizado com sucesso.",
-        });
-        router.replace('/profile/edit', { scroll: false });
-    }
-  }, [router, toast, searchParams]);
-
-
   const handleCheckout = async (priceId: string) => {
     if (!user) {
       const product = products.find(p => p.prices.some(pr => pr.id === priceId));
