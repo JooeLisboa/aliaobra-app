@@ -177,12 +177,12 @@ function PremiumSearchContent() {
                <Alert>
                   <AlertTitle>Consulta Premium</AlertTitle>
                   <AlertDescription>
-                    Este é um serviço premium. Haverá uma cobrança única de R$8,90 para realizar a análise e encontrar o melhor profissional para o seu projeto.
+                    Este é um serviço premium. Uma pequena taxa será cobrada para realizar a análise e encontrar o melhor profissional para o seu projeto. Você verá o valor final na próxima tela.
                   </AlertDescription>
                 </Alert>
               <Button type="submit" size="lg" disabled={isRedirecting || isSubmitting}>
                 {(isRedirecting || isSubmitting) && <LoaderCircle className="animate-spin mr-2" />}
-                Encontrar Profissional com IA (R$ 8,90)
+                Encontrar Profissional com IA
               </Button>
             </CardFooter>
           </form>
