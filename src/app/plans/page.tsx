@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getActiveProductsWithPrices } from '@/lib/data';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { loadStripe } from '@stripe/stripe-js';
-import { addDoc, collection, onSnapshot } from 'firebase/firestore';
+import { addDoc, collection, onSnapshot, DocumentReference } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -67,7 +67,6 @@ export default function PlansPage() {
             success_url: `${window.location.origin}/profile/edit?plan_success=true`,
             cancel_url: window.location.origin,
             allow_promotion_codes: true,
-            payment_method_types: ['card'],
         });
 
         onSnapshot(docRef, async (snap) => {
@@ -111,7 +110,9 @@ export default function PlansPage() {
         return { text: 'Fazer Login para Assinar', disabled: false, variant: buttonVariant };
     }
     
-    const isCurrentPlan = user.subscription?.product && 'id' in user.subscription.product ? user.subscription.product.id === product.id : false;
+    const currentProductRef = user.subscription?.product as DocumentReference | undefined;
+    const isCurrentPlan = currentProductRef?.id === product.id;
+    
     if (isCurrentPlan) {
         return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as const };
     }
