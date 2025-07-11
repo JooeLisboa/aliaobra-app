@@ -111,8 +111,14 @@ export default function PlansPage() {
         return { text: 'Fazer Login para Assinar', disabled: false, variant: buttonVariant };
     }
     
-    const currentProductRef = user.subscription?.product as DocumentReference | undefined;
-    const isCurrentPlan = currentProductRef?.id === product.id;
+    // Correctly get the product ID from the DocumentReference
+    const currentProductId = user.subscription?.product instanceof DocumentReference 
+      ? user.subscription.product.id 
+      : (typeof user.subscription?.product === 'object' && user.subscription.product.id)
+      ? user.subscription.product.id
+      : null;
+
+    const isCurrentPlan = currentProductId === product.id;
     
     if (isCurrentPlan) {
         return { text: 'Seu Plano Atual', disabled: true, variant: 'secondary' as const };
