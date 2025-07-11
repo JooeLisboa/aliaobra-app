@@ -20,7 +20,9 @@ import { addDoc, collection, onSnapshot, doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 
-const PREMIUM_SEARCH_PRICE_ID = 'price_1RjLrnEHwQUfCRykWC9qQOh8';
+// FIXED PRICE FOR PREMIUM SEARCH - Create this one-time product in your Stripe dashboard
+const PREMIUM_SEARCH_PRODUCT_ID = 'prod_YOUR_PREMIUM_SEARCH_PRODUCT_ID';
+const PREMIUM_SEARCH_PRICE_ID = 'price_YOUR_PREMIUM_SEARCH_PRICE_ID'; // The ID of the price for the product above
 
 const searchSchema = z.object({
   projectDescription: z.string().min(50, 'Descreva seu projeto com pelo menos 50 caracteres para uma análise precisa.'),
@@ -67,7 +69,7 @@ function PremiumSearchContent() {
       toast({ variant: 'destructive', title: 'Erro de Configuração', description: 'A chave publicável do Stripe não está configurada.' });
       return;
     }
-     if (PREMIUM_SEARCH_PRICE_ID === 'price_...') {
+     if (PREMIUM_SEARCH_PRICE_ID.startsWith('price_YOUR')) {
       toast({ variant: 'destructive', title: 'Erro de Configuração', description: 'O ID do preço da consulta premium não foi definido no código. Crie o produto no Stripe e adicione o ID do preço.' });
       return;
     }
@@ -178,7 +180,7 @@ function PremiumSearchContent() {
                <Alert>
                   <AlertTitle>Consulta Premium</AlertTitle>
                   <AlertDescription>
-                    Este é um serviço premium. Uma pequena taxa será cobrada para realizar a análise e encontrar o melhor profissional para o seu projeto. Você verá o valor final na próxima tela.
+                    Este é um serviço premium. Uma pequena taxa será cobrada para realizar a análise e encontrar o melhor profissional para o seu projeto.
                   </AlertDescription>
                 </Alert>
               <Button type="submit" size="lg" disabled={isRedirecting || isSubmitting}>
