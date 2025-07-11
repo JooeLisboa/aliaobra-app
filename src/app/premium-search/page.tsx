@@ -1,3 +1,4 @@
+
 // src/app/premium-search/page.tsx
 'use client';
 
@@ -81,7 +82,7 @@ function PremiumSearchContent() {
         success_url: `${window.location.origin}/premium-search-result?description=${encodeURIComponent(values.projectDescription)}`,
         cancel_url: `${window.location.origin}/premium-search`,
         allow_promotion_codes: true,
-        payment_method_types: ['card'],
+        payment_method_types: ['card', 'boleto'],
       });
 
       onSnapshot(docRef, async (snap) => {
@@ -182,7 +183,7 @@ function PremiumSearchContent() {
                 </Alert>
               <Button type="submit" size="lg" disabled={isRedirecting || isSubmitting}>
                 {(isRedirecting || isSubmitting) && <LoaderCircle className="animate-spin mr-2" />}
-                Encontrar Profissional com IA
+                 Continuar para o Pagamento
               </Button>
             </CardFooter>
           </form>
