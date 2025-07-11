@@ -3,107 +3,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // /users/{userId}
-    // Clients have a user profile in this collection.
-    match /users/{userId} {
-      // Allow user to read and update their own profile.
-      allow read, update: if isSignedIn() && isOwner(userId);
-      // Allow new user creation during signup.
-      allow create: if isSignedIn();
-    }
-
-    // /providers/{providerId}
-    // Providers and Agencies have a profile in this collection.
-    match /providers/{providerId} {
-      // Anyone can view a provider's profile.
-      allow read: if true;
-      // Only the owner can create or update their profile.
-      allow create, update: if isSignedIn() && isOwner(providerId);
-      
-      // /reviews are embedded in the provider document, access controlled by parent.
-    }
-
-    // /services/{serviceId}
-    // Service requests created by clients.
-    match /services/{serviceId} {
-      // Anyone can view a service.
-      allow read: if true;
-      // Only the client who created the service can update it (e.g., to accept a proposal).
-      allow update: if isSignedIn() && isOwner(resource.data.clientId);
-      // Any signed-in user (client) can create a new service.
-      // We verify the clientId matches the auth.uid in the server action.
-      allow create: if isSignedIn();
-    }
-    
-    // /services/{serviceId}/proposals/{proposalId}
-    // Proposals made by providers on a service.
-    match /services/{serviceId}/proposals/{proposalId} {
-        // Only the client who owns the service and the provider who made the proposal can read it.
-        allow read: if isSignedIn() && (isOwner(get(/databases/$(database)/documents/services/$(serviceId)).data.clientId) || isOwner(resource.data.providerId));
-        // Only a signed-in provider can create a proposal.
-        allow create: if isSignedIn() && isOwner(request.resource.data.providerId);
-        // Nobody can update a proposal directly. Updates happen via acceptProposal transaction.
-        allow update: if false;
-    }
-    
-    // /chats/{chatId}
-    // Conversations between users.
-    match /chats/{chatId} {
-      // User can only read a chat if they are one of the participants.
-      allow read, update: if isSignedIn() && request.auth.uid in resource.data.participantIds;
-      // Chat is created via a transaction in a server action, ensuring both participants are included.
-      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
-
-      // /messages subcollection
-      match /messages/{messageId} {
-        // A user can read messages only if they are part of the parent chat.
-        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
-        // A user can create a message only if they are part of the chat and the senderId matches their own.
-        allow create: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds && isOwner(request.resource.data.senderId);
-        // Messages are immutable.
-        allow update, delete: if false;
-      }
-    }
-    
-    // Stripe data is managed by the official Stripe Firebase extension.
-    // The rules below are generally safe defaults.
-    match /customers/{userId} {
-      allow read, write: if isOwner(userId);
-      
-      match /checkout_sessions/{id} {
-        allow read, write: if isOwner(userId);
-      }
-      match /subscriptions/{id} {
-        allow read, write: if isOwner(userId);
-      }
-      match /payments/{id} {
-        allow read, write: if isOwner(userId);
-      }
-    }
-    
-    // Products and prices are public to be read by any client.
-    match /products/{id} {
-      allow read: if true;
-      allow write: if false; // Should be managed from Stripe dashboard.
-      
-      match /prices/{id} {
-        allow read: if true;
-        allow write: if false; // Should be managed from Stripe dashboard.
-      }
-      
-      match /tax_rates/{id} {
-        allow read: if true;
-        allow write: if false;
-      }
+    // This rule allows anyone with your Firestore database reference to view, edit,
+    // and delete all data in your Firestore database. It is useful for getting
+    // started, but it is configured to expire after 30 days because it
+    // leaves your app open to attackers. At that time, all client
+    // requests to your Firestore database will be denied.
+    //
+    // Make sure to write security rules for your app before that time, or else
+    // all client requests to your Firestore database will be denied until you Update
+    // your rules
+    match /{document=**} {
+      allow read, write: if request.time < timestamp.date(2025, 8, 6);
     }
   }
 }
