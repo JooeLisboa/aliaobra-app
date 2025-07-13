@@ -52,15 +52,23 @@ npm install
 
 O projeto inclui um script para facilitar a configuração do Firebase. Ele irá buscar suas credenciais de projeto e criar o arquivo `.env`.
 
-Execute o seguinte comando no terminal:
+**Importante:** Primeiro, verifique qual é o seu ID de projeto ativo no Firebase com o comando:
+```bash
+firebase projects:list
+```
+Em seguida, defina o projeto correto para trabalhar:
+```bash
+firebase use <seu-project-id>
+```
 
+Agora, execute o seguinte comando no terminal:
 ```bash
 npm run setup:firebase
 ```
 
 Este script irá:
 1. Verificar se você está logado no Firebase CLI.
-2. Detectar seu projeto Firebase ativo (`firebase use <seu-project-id>`).
+2. Detectar seu projeto Firebase ativo.
 3. Encontrar sua aplicação web Firebase.
 4. Gerar um arquivo `.env` na raiz do projeto com as chaves do Firebase.
 
@@ -85,7 +93,7 @@ O aplicativo usa a extensão "Run Payments with Stripe" do Firebase. Você preci
 1.  Obtenha uma API Key no [Google AI Studio](https://aistudio.google.com/).
 2.  No arquivo `.env`, adicione sua chave à variável `GOOGLE_API_KEY`.
 
-### 5. Executando a Aplicação
+### 5. Executando a Aplicação Localmente
 
 Com tudo configurado, você pode iniciar o servidor de desenvolvimento.
 
@@ -94,6 +102,18 @@ npm run dev
 ```
 
 A aplicação estará disponível em `http://localhost:3000`.
+
+### 6. Deploy (Publicação) da Aplicação
+
+Este projeto está configurado para o Firebase App Hosting. O deploy é feito através da sua integração com o GitHub.
+
+1.  Conecte seu repositório do GitHub ao Firebase App Hosting.
+2.  O Firebase criará um fluxo de trabalho (GitHub Action) que fará o deploy automaticamente toda vez que você enviar um commit para a sua branch principal (`master` ou `main`).
+
+Você também pode fazer o deploy manual das regras do Firestore (se alteradas) com:
+```bash
+firebase deploy --only firestore --project <seu-project-id>
+```
 
 ## 📜 Scripts Disponíveis
 
