@@ -5,28 +5,54 @@ import { doc, runTransaction, arrayUnion, collection, getDoc } from 'firebase/fi
 import { db, areCredsAvailable } from '@/lib/firebase';
 import type { Review, Provider, UserProfile } from '@/lib/types';
 import { z } from 'zod';
+import { getFirebaseAdmin } from './firebase-admin';
+import { headers } from 'next/headers';
+
+// Helper function to decode the Firebase auth token
+async function getUserIdFromToken() {
+    const authorization = headers().get('Authorization');
+    if (!authorization?.startsWith('Bearer ')) {
+        return null;
+    }
+    const token = authorization.split('Bearer ')[1];
+    if (!token) return null;
+
+    try {
+        const { auth } = getFirebaseAdmin();
+        const decodedToken = await auth.verifyIdToken(token);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error("Error verifying auth token:", error);
+        return null;
+    }
+}
 
 const reviewSchema = z.object({
   providerId: z.string().min(1),
   rating: z.number().min(1).max(5),
   comment: z.string().min(10, { message: 'Comentário precisa ter no mínimo 10 caracteres.' }),
   imageUrl: z.string().url().nullable().optional(),
-  authorId: z.string().min(1),
 });
 
 export async function addReview(data: unknown) {
     if (!areCredsAvailable || !db) {
         return { success: false, error: 'A configuração do Firebase está incompleta.' };
     }
+
+    const authorId = await getUserIdFromToken();
+    if (!authorId) {
+        return { success: false, error: 'Usuário não autenticado.' };
+    }
     
     const validation = reviewSchema.safeParse(data);
     if (!validation.success) {
         const errorDetails = validation.error.flatten().fieldErrors;
         console.error("Review validation failed:", errorDetails);
-        return { success: false, error: 'Dados da avaliação são inválidos.' };
+        const errorMessage = Object.values(errorDetails).flat().join(', ');
+        return { success: false, error: `Dados da avaliação são inválidos: ${errorMessage}` };
     }
 
-    const { providerId, rating, comment, imageUrl, authorId } = validation.data;
+    const { providerId, rating, comment, imageUrl } = validation.data;
     const providerRef = doc(db, 'providers', providerId);
 
     try {

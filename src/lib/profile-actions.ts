@@ -7,10 +7,31 @@ import { db, areCredsAvailable, storage } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { PortfolioItem } from '@/lib/types';
+import { getFirebaseAdmin } from './firebase-admin';
+import { headers } from 'next/headers';
+
+// Helper function to decode the Firebase auth token
+async function getUserIdFromToken() {
+    const authorization = headers().get('Authorization');
+    if (!authorization?.startsWith('Bearer ')) {
+        return null;
+    }
+    const token = authorization.split('Bearer ')[1];
+    if (!token) return null;
+
+    try {
+        const { auth } = getFirebaseAdmin();
+        const decodedToken = await auth.verifyIdToken(token);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error("Error verifying auth token:", error);
+        return null;
+    }
+}
+
 
 // Schema for the profile details part
 const profileDetailsSchema = z.object({
-  userId: z.string().min(1, 'ID do usuário é obrigatório.'),
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   category: z.string().min(3, 'A categoria deve ter pelo menos 3 caracteres.'),
   location: z.string().min(2, 'A localização deve ter pelo menos 2 caracteres.'),
@@ -24,6 +45,11 @@ export async function updateProfileDetails(formData: FormData) {
     return { success: false, error: 'O serviço de banco de dados ou armazenamento não está disponível.' };
   }
 
+  const userId = await getUserIdFromToken();
+  if (!userId) {
+    return { success: false, error: 'Usuário não autenticado.' };
+  }
+
   try {
     const rawData = Object.fromEntries(formData.entries());
     const validation = profileDetailsSchema.safeParse(rawData);
@@ -32,7 +58,7 @@ export async function updateProfileDetails(formData: FormData) {
       return { success: false, error: 'Dados inválidos. Verifique os campos de informações básicas.' };
     }
     
-    const { userId, skills, ...updateData } = validation.data;
+    const { skills, ...updateData } = validation.data;
     
     const providerRef = doc(db, 'providers', userId);
     const docSnap = await getDoc(providerRef);
@@ -61,7 +87,8 @@ export async function updateProfileDetails(formData: FormData) {
     if (newAvatarUrl) {
       firestoreUpdateData.avatarUrl = newAvatarUrl;
     } else {
-      firestoreUpdateData.avatarUrl = updateData.avatarUrl;
+      // If no new avatar is uploaded, we still need to make sure the existing one is preserved.
+      firestoreUpdateData.avatarUrl = updateData.avatarUrl ?? docSnap.data()?.avatarUrl;
     }
 
     await updateDoc(providerRef, firestoreUpdateData);
@@ -78,13 +105,17 @@ export async function updateProfileDetails(formData: FormData) {
 
 // Schema for the portfolio part
 const portfolioSchema = z.object({
-  userId: z.string().min(1, 'ID do usuário é obrigatório.'),
   existingPortfolio: z.string().transform((str) => JSON.parse(str) as PortfolioItem[]),
 });
 
 export async function updateProfilePortfolio(formData: FormData) {
     if (!areCredsAvailable || !db || !storage) {
         return { success: false, error: 'O serviço de banco de dados ou armazenamento não está disponível.' };
+    }
+
+    const userId = await getUserIdFromToken();
+    if (!userId) {
+      return { success: false, error: 'Usuário não autenticado.' };
     }
 
     try {
@@ -95,7 +126,7 @@ export async function updateProfilePortfolio(formData: FormData) {
             return { success: false, error: 'Dados do portfólio inválidos.' };
         }
 
-        const { userId, existingPortfolio } = validation.data;
+        const { existingPortfolio } = validation.data;
         
         const providerRef = doc(db, 'providers', userId);
         const docSnap = await getDoc(providerRef);

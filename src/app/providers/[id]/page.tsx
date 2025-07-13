@@ -29,35 +29,18 @@ import { PlanIcon } from '@/components/plan-icon';
 
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
-  const { id } = use(params);
+  const { id } = params; // Use direct destructuring
   const { toast } = useToast();
   const { user } = useUser();
   const router = useRouter();
   
   const [messageOpen, setMessageOpen] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [providerData, setProviderData] = useState<Provider | null>();
-  const [managedProviders, setManagedProviders] = useState<Provider[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   
-  useEffect(() => {
-    if (!id) return;
-    const fetchProviderData = async () => {
-      setIsLoading(true);
-      const foundProvider = await getProvider(id);
-      setProviderData(foundProvider || null);
-
-      if (foundProvider && foundProvider.type === 'agency' && foundProvider.managedProviderIds) {
-        const managed = await getProvidersByIds(foundProvider.managedProviderIds);
-        setManagedProviders(managed);
-      }
-      setIsLoading(false);
-    };
-
-    fetchProviderData();
-  }, [id]);
-
-
+  // Use React's `use` hook for cleaner data fetching in Server Components
+  const providerData = use(getProvider(id));
+  const managedProviders = use(getProvidersByIds(providerData?.managedProviderIds ?? []));
+  
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -88,16 +71,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
     setIsSendingMessage(false);
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-96 text-muted-foreground">
-          <LoaderCircle className="w-8 h-8 animate-spin mr-4" />
-          Carregando perfil...
-        </div>
-      </div>
-    );
-  }
 
   if (!providerData) {
     return (

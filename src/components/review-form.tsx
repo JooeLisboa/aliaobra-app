@@ -141,7 +141,6 @@ export function ReviewForm({ providerId }: { providerId: string }) {
         rating: values.rating,
         comment: values.comment,
         imageUrl: capturedImage,
-        authorId: user.uid,
       });
       if (result.success) {
         toast({ title: "Avaliação Enviada!", description: "Obrigado por seu feedback. A página será atualizada." });

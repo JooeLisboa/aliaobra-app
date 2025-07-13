@@ -81,32 +81,22 @@ function ProposalForm({ serviceId, user }: { serviceId: string; user: any; }) {
 
 
 export default function ServiceDetailPage({ params }: { params: { id: string } }) {
-    const { id } = use(params);
-    const [service, setService] = useState<Service | null | undefined>(undefined);
-    const [proposals, setProposals] = useState<Proposal[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { id } = params;
     const { user, isLoading: isUserLoading } = useUser();
     const [isAccepting, startAcceptance] = useTransition();
     const { toast } = useToast();
     const router = useRouter();
 
-    useEffect(() => {
-        if (!id) return;
-        const fetchServiceData = async () => {
-            setIsLoading(true);
-            const serviceData = await getService(id);
-            setService(serviceData);
-            if (serviceData) {
-                const proposalData = await getProposalsForService(id);
-                setProposals(proposalData);
-            }
-            setIsLoading(false);
-        };
-        fetchServiceData();
-    }, [id]);
+    // Use React's `use` hook for cleaner data fetching in Server Components
+    const service = use(getService(id));
+    const proposals = use(getProposalsForService(id));
+
+    if (!service) {
+        return notFound();
+    }
     
     const handleAcceptProposal = (proposal: Proposal) => {
-      if (!service || !user) return;
+      if (!user) return;
       if (user.uid !== service.clientId) {
         toast({ variant: 'destructive', title: 'Erro', description: 'Você não tem permissão para aceitar propostas para este serviço.' });
         return;
@@ -116,7 +106,6 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
           serviceId: service.id,
           proposalId: proposal.id,
           providerId: proposal.providerId,
-          clientId: user.uid
         });
 
         if (result.success) {
@@ -128,7 +117,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
       });
     };
 
-    if (service === undefined || isUserLoading) {
+    if (isUserLoading) {
         return (
             <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
                 <LoaderCircle className="w-8 h-8 animate-spin" />
@@ -136,10 +125,6 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
         );
     }
     
-    if (service === null) {
-        return notFound();
-    }
-
     const isOwner = user && user.uid === service.clientId;
     const isProvider = user?.profile?.userType === 'provider' || user?.profile?.userType === 'agency';
     const hasAlreadyProposed = user && proposals.some(p => p.providerId === user.uid);

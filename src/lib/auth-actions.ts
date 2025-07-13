@@ -26,7 +26,9 @@ export async function createUserProfile(data: z.infer<typeof userProfileSchema>)
   
   const validation = userProfileSchema.safeParse(data);
   if (!validation.success) {
-    return { success: false, error: "Validation failed: " + validation.error.flatten().fieldErrors };
+    const flattenedErrors = validation.error.flatten().fieldErrors;
+    const errorMessages = Object.values(flattenedErrors).flat().join(', ');
+    return { success: false, error: `Dados inválidos: ${errorMessages}` };
   }
   
   const { uid, email, fullName, cpfCnpj, userType, plan } = validation.data;

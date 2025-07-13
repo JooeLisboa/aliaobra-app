@@ -1,7 +1,8 @@
+
 // src/app/premium-search-result/page.tsx
 'use client';
 
-import { Suspense, useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoaderCircle, Wand2, SearchX } from 'lucide-react';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-function PremiumSearchResultContent() {
+export default function PremiumSearchResultPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -44,7 +45,8 @@ function PremiumSearchResultContent() {
         setError(res.error || 'Não foi possível encontrar um profissional compatível. Tente refinar sua busca.');
       }
     });
-  }, [searchParams, router, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isPending) {
     return (
@@ -95,13 +97,4 @@ function PremiumSearchResultContent() {
       </Card>
     </div>
   );
-}
-
-
-export default function PremiumSearchResultPage() {
-  return (
-    <Suspense>
-        <PremiumSearchResultContent />
-    </Suspense>
-  )
 }

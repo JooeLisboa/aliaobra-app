@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, addDoc, doc, runTransaction, getDoc } from 'firebase/firestore';
@@ -94,7 +95,6 @@ export async function createService(formData: FormData) {
 
 
 const createProposalSchema = z.object({
-    // providerId is now derived on the server
     amount: z.coerce.number().positive('O valor da proposta deve ser positivo.'),
     message: z.string().min(10, 'A mensagem deve ter no mínimo 10 caracteres.'),
 });
@@ -149,19 +149,24 @@ const acceptProposalSchema = z.object({
     serviceId: z.string().min(1),
     proposalId: z.string().min(1),
     providerId: z.string().min(1),
-    clientId: z.string().min(1),
 });
 
 export async function acceptProposal(data: z.infer<typeof acceptProposalSchema>) {
     if (!areCredsAvailable || !db) {
         return { success: false, error: 'Serviço de banco de dados indisponível.' };
     }
+    
+    const clientId = await getUserIdFromToken();
+    if (!clientId) {
+      return { success: false, error: 'Usuário não autenticado.' };
+    }
+
     const validation = acceptProposalSchema.safeParse(data);
     if (!validation.success) {
         return { success: false, error: 'Dados inválidos para aceitar proposta.' };
     }
 
-    const { serviceId, proposalId, providerId, clientId } = validation.data;
+    const { serviceId, proposalId, providerId } = validation.data;
     
     const serviceRef = doc(db, 'services', serviceId);
     const proposalRef = doc(db, 'services', serviceId, 'proposals', proposalId);
