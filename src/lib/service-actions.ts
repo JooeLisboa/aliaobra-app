@@ -1,4 +1,3 @@
-
 'use server';
 
 import { collection, addDoc, doc, runTransaction, getDoc } from 'firebase/firestore';
@@ -9,7 +8,7 @@ import { getFirebaseAdmin } from './firebase-admin';
 import { headers } from 'next/headers';
 import type { UserProfile, Provider } from './types';
 
-// Helper function to decode the Firebase auth token
+// Helper function to decode the Firebase auth token from headers
 async function getUserIdFromToken() {
     const authorization = headers().get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {

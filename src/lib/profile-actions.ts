@@ -1,4 +1,3 @@
-
 'use server';
 
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -10,7 +9,7 @@ import type { PortfolioItem } from '@/lib/types';
 import { getFirebaseAdmin } from './firebase-admin';
 import { headers } from 'next/headers';
 
-// Helper function to decode the Firebase auth token
+// Helper function to decode the Firebase auth token from headers
 async function getUserIdFromToken() {
     const authorization = headers().get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
@@ -52,6 +51,9 @@ export async function updateProfileDetails(formData: FormData) {
 
   try {
     const rawData = Object.fromEntries(formData.entries());
+    // The userId was previously in rawData, now it's retrieved securely
+    rawData.userId = userId;
+
     const validation = profileDetailsSchema.safeParse(rawData);
     if (!validation.success) {
       console.error('Validation errors:', validation.error.flatten());

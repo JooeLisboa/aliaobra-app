@@ -24,17 +24,15 @@ import { headers } from 'next/headers';
 
 const startChatSchema = z.object({
   providerId: z.string(),
-  // clientId is now derived on the server
   initialMessage: z.string().min(1, "A mensagem não pode estar vazia.").max(500, "A mensagem é muito longa."),
 });
 
 const sendMessageSchema = z.object({
   chatId: z.string(),
-  // senderId is now derived on the server
   messageText: z.string().min(1, "A mensagem não pode estar vazia.").max(500, "A mensagem é muito longa."),
 });
 
-// Helper function to decode the Firebase auth token
+// Helper function to decode the Firebase auth token from headers
 async function getUserIdFromToken() {
     const authorization = headers().get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {

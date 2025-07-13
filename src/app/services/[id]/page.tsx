@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition, use } from 'react';
+import { useState, useTransition, use } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getService, getProposalsForService } from '@/lib/data';
@@ -21,7 +21,7 @@ import { createProposal, acceptProposal } from '@/lib/service-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-function ProposalForm({ serviceId, user }: { serviceId: string; user: any; }) {
+function ProposalForm({ serviceId }: { serviceId: string; }) {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -87,7 +87,6 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
     const { toast } = useToast();
     const router = useRouter();
 
-    // Use React's `use` hook for cleaner data fetching in Server Components
     const service = use(getService(id));
     const proposals = use(getProposalsForService(id));
 
@@ -251,7 +250,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                                   </AlertDescription>
                                 </Alert>
                             ) : isSubscriber ? (
-                                <ProposalForm serviceId={service.id} user={user} />
+                                <ProposalForm serviceId={service.id} />
                             ) : (
                                 <Alert variant="default" className="border-primary/50 text-center">
                                     <ShieldAlert className="h-4 w-4" />

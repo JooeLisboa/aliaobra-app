@@ -29,7 +29,7 @@ import { PlanIcon } from '@/components/plan-icon';
 
 
 export default function ProviderProfilePage({ params }: { params: { id: string } }) {
-  const { id } = params; // Use direct destructuring
+  const { id } = params; 
   const { toast } = useToast();
   const { user } = useUser();
   const router = useRouter();
@@ -37,7 +37,6 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
   const [messageOpen, setMessageOpen] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   
-  // Use React's `use` hook for cleaner data fetching in Server Components
   const providerData = use(getProvider(id));
   const managedProviders = use(getProvidersByIds(providerData?.managedProviderIds ?? []));
   
@@ -300,7 +299,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                       <p className="text-muted-foreground">Nenhum trabalho no portfólio ainda.</p>
                     )}
                   </CardContent>
-                </Card>
+                </TabsContent>
               </TabsContent>
               <TabsContent value="about" className="mt-6">
                 <Card>
