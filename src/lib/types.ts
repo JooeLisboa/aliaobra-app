@@ -64,7 +64,10 @@ export type StripePrice = {
   description: string | null;
   type: 'one_time' | 'recurring';
   unit_amount: number | null;
-  interval?: 'day' | 'week' | 'month' | 'year';
+  recurring?: {
+    interval: 'day' | 'week' | 'month' | 'year';
+    [key: string]: any;
+  };
   [key: string]: any;
 };
 
@@ -95,4 +98,30 @@ export type StripeSubscription = {
 export type AppUser = FirebaseAuthUser & {
   profile?: Provider | UserProfile;
   subscription?: StripeSubscription | null;
+};
+
+export type Service = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  title: string;
+  description: string;
+  category: string;
+  budget: number;
+  status: 'open' | 'in_progress' | 'completed';
+  createdAt: number;
+  assignedProviderId?: string;
+  acceptedProposalId?: string;
+  acceptedProposalAmount?: number;
+};
+
+export type Proposal = {
+  id: string;
+  providerId: string;
+  providerName: string;
+  providerAvatarUrl: string;
+  amount: number;
+  message: string;
+  createdAt: number;
+  status: 'pending' | 'accepted' | 'rejected';
 };

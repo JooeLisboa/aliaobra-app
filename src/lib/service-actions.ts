@@ -94,13 +94,12 @@ export async function createService(formData: FormData) {
 
 
 const createProposalSchema = z.object({
-    serviceId: z.string().min(1),
     // providerId is now derived on the server
     amount: z.coerce.number().positive('O valor da proposta deve ser positivo.'),
     message: z.string().min(10, 'A mensagem deve ter no mínimo 10 caracteres.'),
 });
 
-export async function createProposal(formData: FormData) {
+export async function createProposal(serviceId: string, formData: FormData) {
     if (!areCredsAvailable || !db) {
         return { success: false, error: 'O serviço de banco de dados não está disponível.' };
     }
@@ -117,7 +116,7 @@ export async function createProposal(formData: FormData) {
         return { success: false, error: 'Dados da proposta inválidos.', details: validation.error.flatten() };
     }
 
-    const { serviceId, amount, message } = validation.data;
+    const { amount, message } = validation.data;
 
     try {
         // SECURITY: Fetch provider details from server.

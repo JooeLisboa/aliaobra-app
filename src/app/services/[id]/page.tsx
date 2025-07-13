@@ -21,7 +21,7 @@ import { createProposal, acceptProposal } from '@/lib/service-actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-function ProposalForm({ serviceId }: { serviceId: string; }) {
+function ProposalForm({ serviceId, user }: { serviceId: string; user: any; }) {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -30,9 +30,8 @@ function ProposalForm({ serviceId }: { serviceId: string; }) {
         event.preventDefault();
         startTransition(async () => {
             const formData = new FormData(event.currentTarget);
-            formData.append('serviceId', serviceId);
-
-            const result = await createProposal(formData);
+            
+            const result = await createProposal(serviceId, formData);
 
             if (result.success) {
                 toast({ title: 'Proposta Enviada!', description: 'O cliente foi notificado.' });
@@ -117,6 +116,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
           serviceId: service.id,
           proposalId: proposal.id,
           providerId: proposal.providerId,
+          clientId: user.uid
         });
 
         if (result.success) {
@@ -266,7 +266,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                                   </AlertDescription>
                                 </Alert>
                             ) : isSubscriber ? (
-                                <ProposalForm serviceId={service.id} />
+                                <ProposalForm serviceId={service.id} user={user} />
                             ) : (
                                 <Alert variant="default" className="border-primary/50 text-center">
                                     <ShieldAlert className="h-4 w-4" />

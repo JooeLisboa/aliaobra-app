@@ -1,4 +1,3 @@
-
 // src/app/premium-search/page.tsx
 'use client';
 
@@ -61,7 +60,9 @@ function PremiumSearchContent() {
 
   const handleCheckout = async (values: SearchFormValues) => {
     if (!user) {
-      router.push('/login?redirect=/premium-search');
+      const params = new URLSearchParams();
+      params.set('redirect', '/premium-search');
+      router.push(`/login?${params.toString()}`);
       return;
     }
 
