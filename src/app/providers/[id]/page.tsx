@@ -299,7 +299,7 @@ export default function ProviderProfilePage({ params }: { params: { id: string }
                       <p className="text-muted-foreground">Nenhum trabalho no portfólio ainda.</p>
                     )}
                   </CardContent>
-                </TabsContent>
+                </Card>
               </TabsContent>
               <TabsContent value="about" className="mt-6">
                 <Card>
